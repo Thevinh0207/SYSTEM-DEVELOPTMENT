@@ -1,0 +1,19 @@
+{% extends 'layout.twig' %}
+{% block title %}Confirmed | Studio Doki{% endblock %}
+{% block content %}
+<main class="confirmed">
+    <div class="check">✓</div>
+    <h1>Appointment Confirmed!</h1>
+    <p>We have sent a confirmation email to sarah@example.com</p>
+    <section class="details-card">
+        <h2>Appointment Details</h2>
+        <div><span>Service</span><strong>Gel-X Extensions + French</strong></div>
+        <div><span>Date</span><strong>Sunday, March 30, 2026</strong></div>
+        <div><span>Time</span><strong>2:00 PM</strong></div>
+        <div><span>Location</span><strong>Studio Doki</strong></div>
+        <div><span>Deposit Paid</span><strong class="success">$20.00</strong></div>
+    </section>
+    <p class="notice"><strong>Important:</strong> Please arrive 5 minutes early. Cancel or reschedule at least 48 hours in advance to avoid losing your deposit.</p>
+    <a class="btn" href="{{ path('/dashboard') }}">Add to Calendar</a>
+</main>
+{% endblock %}

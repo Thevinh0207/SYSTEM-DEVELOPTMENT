@@ -1,0 +1,17 @@
+{% extends 'layout.twig' %}
+{% block title %}Login | Studio Doki{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block nav %}{% endblock %}
+{% block content %}
+<main class="auth-shell">
+    <form class="auth-card" method="get" action="{{ path('/dashboard') }}">
+        <a class="brand auth-brand" href="{{ path('/') }}"><span>&hearts;</span> Studio Doki</a>
+        <h1>Welcome Back</h1>
+        <label>Email<input placeholder="you@example.com"></label>
+        <label>Password<input type="password" placeholder="Password"></label>
+        <button class="btn wide">Log In</button>
+        <a class="outline-btn" href="{{ path('/register') }}">Create Account</a>
+        <a href="{{ path('/book/info') }}">Continue as Guest</a>
+    </form>
+</main>
+{% endblock %}

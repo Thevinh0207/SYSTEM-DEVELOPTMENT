@@ -1,0 +1,21 @@
+{% set summary = summary|default({}) %}
+{% set service = summary.service|default('Gel-X Extensions + French') %}
+{% set total = summary.total|default(75) %}
+{% set deposit = summary.deposit|default(20) %}
+<aside class="summary-card">
+    <h2>Appointment Summary</h2>
+    <div class="summary-line muted">Service</div>
+    <p>{{ service }}</p>
+    {% if summary.date is defined %}
+        <div class="summary-line muted">Date &amp; Time</div>
+        <p>{{ summary.date }}</p>
+    {% endif %}
+    {% if summary.name is defined %}
+        <div class="summary-line muted">Name</div>
+        <p>{{ summary.name }}</p>
+    {% endif %}
+    <hr>
+    <div class="summary-row"><span>Service</span><strong>${{ total|number_format(2) }}</strong></div>
+    <div class="summary-row"><span>Deposit</span><strong>${{ deposit|number_format(2) }}</strong></div>
+    <div class="summary-row"><span>Due at Appointment</span><strong class="pink">${{ (total - deposit)|number_format(2) }}</strong></div>
+</aside>

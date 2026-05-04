@@ -1,0 +1,18 @@
+{% extends 'layout.twig' %}
+{% block title %}Deposit Payment | Studio Doki{% endblock %}
+{% block content %}
+<main class="booking">
+    <h1>Book Your Appointment</h1>
+    <p class="subtitle">Step 5 of 6: Deposit Payment</p>
+    <div class="booking-grid">
+        <form class="form-panel" action="{{ path('/book/confirmed') }}" method="get">
+            <p class="notice">A $20 non-refundable deposit is required to secure your appointment. This will be applied to your total service cost.</p>
+            <label>Card Number<input placeholder="1234 5678 9012 3456"></label>
+            <div class="form-row"><label>Expiry Date<input placeholder="MM/YY"></label><label>CVV<input placeholder="123"></label></div>
+            <label>Cardholder Name<input value="Sarah Johnson"></label>
+            <button class="btn">Pay $20 Deposit</button>
+        </form>
+        {% include 'partials/summary.twig' %}
+    </div>
+</main>
+{% endblock %}

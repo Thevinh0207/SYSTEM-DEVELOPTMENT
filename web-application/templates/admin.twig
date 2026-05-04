@@ -1,0 +1,59 @@
+{% extends 'layout.twig' %}
+{% block title %}Admin | Studio Doki{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+{% block nav %}{% endblock %}
+{% block content %}
+<main class="admin-layout">
+    <aside>
+        <span class="admin-pill">ADMIN ONLY</span>
+        <h2>Studio Doki</h2>
+        <a class="{{ section == 'appointments' ? 'active' : '' }}" href="{{ path('/admin/appointments') }}">Appointments</a>
+        <a class="{{ section == 'services' ? 'active' : '' }}" href="{{ path('/admin/services') }}">Services</a>
+        <a class="{{ section == 'reviews' ? 'active' : '' }}" href="{{ path('/admin/reviews') }}">Reviews</a>
+    </aside>
+    <section>
+        {% if section == 'services' %}
+            <h1>Services</h1>
+            <div class="admin-table-wrap">
+                <table>
+                    <tr><th>Service Name</th><th>Category</th><th>Price</th><th>Duration</th><th>Actions</th></tr>
+                    {% for service in services %}
+                        <tr>
+                            <td>{{ service.0 }}</td><td>{{ service.1 }}</td><td>{{ service.2 }}</td><td>{{ service.3 }}</td>
+                            <td><button class="icon-action">Edit</button><button class="icon-action danger">Delete</button></td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        {% elseif section == 'reviews' %}
+            <h1>Customer Reviews</h1>
+            {% for review in reviews %}
+                <div class="review-card">
+                    <strong>{{ review.name }}</strong><span class="stars" aria-label="{{ review.stars }} stars"></span>
+                    <p class="muted">{{ review.meta }}</p>
+                    <p>{{ review.comment }}</p>
+                    <a>Reply to {{ review.name }}</a>
+                    {% if loop.first %}
+                        <div class="reply-box"><strong>Draft reply</strong><p>Thank you so much, Sarah. I am so happy you loved the chrome finish!</p></div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <h1>Appointments</h1>
+            <div class="admin-panel">
+                <div class="calendar-head"><h2>March 2026</h2><div><button>Previous</button><button>Next</button></div></div>
+                <div class="admin-calendar">
+                    {% for day in days %}
+                        <div class="{{ day == 30 ? 'selected' : '' }}"><strong>{{ day }}</strong>{% if day == 15 %}<span>2 appts</span>{% elseif day == 30 %}<span>1 appt</span>{% endif %}</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <h2>Today's Appointments - March 30, 2026</h2>
+            <div class="admin-appointment-list">
+                <div><strong>Sarah Johnson - Gel-X Extensions + French</strong><span>2:00 PM</span><em>Deposit paid</em><button>Edit</button><button class="danger">Cancel</button></div>
+                <div><strong>Emma Davis - Manicure</strong><span>4:00 PM</span><em>Pending</em><button>Edit</button><button class="danger">Cancel</button></div>
+            </div>
+        {% endif %}
+    </section>
+</main>
+{% endblock %}

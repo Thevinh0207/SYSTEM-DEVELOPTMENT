@@ -1,0 +1,21 @@
+{% extends 'layout.twig' %}
+{% block title %}Gel-X Extensions | Studio Doki{% endblock %}
+{% block content %}
+<main class="detail-page">
+    <div class="crumbs">Services <span>&gt;</span> Extensions <span>&gt;</span> Gel-X Extensions</div>
+    <section class="detail-grid">
+        <div>
+            <h1>Gel-X Extensions</h1>
+            <p class="meta"><span>$60+</span> 60 minutes</p>
+            <p>Our Gel-X extension service gives you long-lasting, durable nails with a natural look and feel. Unlike traditional acrylic, Gel-X extensions are gentler on your natural nails while providing strength and flexibility.</p>
+            <p>Each set is custom-fitted to your nail shape and carefully applied for maximum comfort and longevity. Perfect for those looking for a lightweight, glossy finish that lasts 3-4 weeks.</p>
+            <h3>Select Finish</h3>
+            {% for finish, price in {'Plain': '+$0', 'French': '+$15', 'Ombre': '+$15', 'Chrome': '+$15'} %}
+                <label class="option {{ loop.first ? 'selected' : '' }}"><span><input {{ loop.first ? 'checked' : '' }} type="radio" name="finish"> {{ finish }}</span><strong>{{ price }}</strong></label>
+            {% endfor %}
+            <a class="btn wide" href="{{ path('/book') }}">Add to Appointment</a>
+        </div>
+        <img src="{{ images.brush }}" alt="Gel-X nail extension">
+    </section>
+</main>
+{% endblock %}

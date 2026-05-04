@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Studio Doki{% endblock %}</title>
+    <link rel="stylesheet" href="{{ asset('style.css') }}">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    {% block nav %}
+        <header class="site-header">
+            <a class="brand" href="{{ path('/') }}"><span aria-hidden="true">&hearts;</span> Studio Doki</a>
+            <nav>
+                <a class="{{ active == 'home' ? 'active' : '' }}" href="{{ path('/') }}">Home</a>
+                <a class="{{ active == 'services' ? 'active' : '' }}" href="{{ path('/services') }}">Services</a>
+                <a class="{{ active == 'book' ? 'active' : '' }}" href="{{ path('/book') }}">Book</a>
+                <a class="{{ active == 'faq' ? 'active' : '' }}" href="{{ path('/faq') }}">FAQ</a>
+                <a class="account-link" href="{{ path('/login') }}" aria-label="Account">Account</a>
+            </nav>
+        </header>
+    {% endblock %}
+    {% block content %}{% endblock %}
+</body>
+</html>

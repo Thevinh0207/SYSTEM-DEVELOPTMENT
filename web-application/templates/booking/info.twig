@@ -1,0 +1,18 @@
+{% extends 'layout.twig' %}
+{% block title %}Guest Information | Studio Doki{% endblock %}
+{% block content %}
+<main class="booking">
+    <h1>Book Your Appointment</h1>
+    <p class="subtitle">Step 4 of 6: Your Information</p>
+    <div class="booking-grid">
+        <form class="form-panel" action="{{ path('/book/payment') }}" method="get">
+            <label>First Name<input value="Sarah"></label>
+            <label>Last Name<input value="Johnson"></label>
+            <label>Email<input value="sarah@example.com"></label>
+            <label>Phone Number<input value="(555) 123-4567"></label>
+            <button class="btn">Continue to Payment</button>
+        </form>
+        {% include 'partials/summary.twig' %}
+    </div>
+</main>
+{% endblock %}

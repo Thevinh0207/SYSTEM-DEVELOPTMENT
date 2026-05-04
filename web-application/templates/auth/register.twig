@@ -1,0 +1,20 @@
+{% extends 'layout.twig' %}
+{% block title %}Register | Studio Doki{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block nav %}{% endblock %}
+{% block content %}
+<main class="auth-shell">
+    <form class="auth-card" method="get" action="{{ path('/dashboard') }}">
+        <a class="brand auth-brand" href="{{ path('/') }}"><span>&hearts;</span> Studio Doki</a>
+        <h1>Create Account</h1>
+        <label>First Name<input placeholder="Sarah"></label>
+        <label>Last Name<input placeholder="Johnson"></label>
+        <label>Email<input placeholder="you@example.com"></label>
+        <label>Phone Number<input placeholder="(555) 123-4567"></label>
+        <label>Password<input type="password" placeholder="Password"></label>
+        <label>Confirm Password<input type="password" placeholder="Confirm password"></label>
+        <button class="btn wide">Create Account</button>
+        <a href="{{ path('/login') }}">Already have an account?</a>
+    </form>
+</main>
+{% endblock %}

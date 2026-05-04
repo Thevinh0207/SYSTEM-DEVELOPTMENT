@@ -1,0 +1,19 @@
+{% extends 'layout.twig' %}
+{% block title %}Book | Studio Doki{% endblock %}
+{% block content %}
+<main class="booking">
+    <h1>Book Your Appointment</h1>
+    <p class="subtitle">Step 1 of 6: Select Service</p>
+    <div class="booking-grid">
+        <section class="booking-services">
+            {% for service in bookingServices %}
+                <a href="{{ path('/book/date') }}" class="book-card">
+                    <img src="{{ images[service.image] }}" alt="{{ service.name }}">
+                    <h2>{{ service.name }}</h2><span>{{ service.duration }}</span><strong>{{ service.price }}</strong>
+                </a>
+            {% endfor %}
+        </section>
+        {% include 'partials/summary.twig' %}
+    </div>
+</main>
+{% endblock %}

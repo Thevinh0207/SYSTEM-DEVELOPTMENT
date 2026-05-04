@@ -1,0 +1,42 @@
+{% extends 'layout.twig' %}
+{% block title %}Home | Studio Doki{% endblock %}
+{% block content %}
+<main>
+    <section class="hero" style="background-image: linear-gradient(90deg, rgba(6,21,47,.46), rgba(6,21,47,.12)), url({{ images.hero }})">
+        <div class="hero-copy">
+            <h1>More than nails -- it's self-care</h1>
+            <a class="btn" href="{{ path('/book') }}">Book an Appointment</a>
+        </div>
+    </section>
+    <section class="intro narrow">
+        <h2><span>&hearts;</span> Welcome to Studio Doki <span>&hearts;</span></h2>
+        <p>Experience the perfect blend of Korean beauty aesthetics and personalized nail care. At Studio Doki, we believe every manicure is an act of self-love. Owned and operated by Vivian Huynh, we offer premium services in a warm, feminine atmosphere.</p>
+    </section>
+    <section class="section">
+        <div class="dot-rule"></div>
+        <h2 class="section-title"><span>&hearts;</span> Featured Services <span>&hearts;</span></h2>
+        <div class="feature-grid">
+            {% for service in featured %}
+                <a class="service-card" href="{{ path(service.url) }}">
+                    <img src="{{ images[service.image] }}" alt="{{ service.name }}">
+                    <span>{{ service.name }}</span>
+                    <small>{{ service.price }}</small>
+                </a>
+            {% endfor %}
+        </div>
+    </section>
+    <section class="section">
+        <div class="dot-rule"></div>
+        <h2 class="section-title"><span>&hearts;</span> Our Work <span>&hearts;</span></h2>
+        <div class="gallery">
+            {% for key in ['gallery1','gallery2','gallery3','gallery4','gallery5','gallery6'] %}
+                <img src="{{ images[key] }}" alt="Studio Doki nail work">
+            {% endfor %}
+        </div>
+    </section>
+    <footer class="footer">
+        <div><strong>Studio Doki</strong><p>123 Main Street, City, State 12345<br>hello@studiodoki.com | (555) 123-4567</p></div>
+        <p>@studiodoki</p>
+    </footer>
+</main>
+{% endblock %}

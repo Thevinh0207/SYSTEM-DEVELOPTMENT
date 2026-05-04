@@ -1,0 +1,24 @@
+{% extends 'layout.twig' %}
+{% block title %}Book Date | Studio Doki{% endblock %}
+{% block content %}
+<main class="booking">
+    <h1>Book Your Appointment</h1>
+    <p class="subtitle">Step 2 of 6: Select Date &amp; Time</p>
+    <div class="booking-grid">
+        <section class="date-time">
+            <div>
+                <h2>Select Date</h2>
+                <div class="calendar"><h3>March 2026</h3><div class="week">S M T W T F S</div>
+                    <div class="days">{% for day in days %}<button class="{{ day == 30 ? 'picked' : (day > 27 ? 'disabled' : '') }}">{{ day }}</button>{% endfor %}</div>
+                </div>
+            </div>
+            <div>
+                <h2>Select Time</h2>
+                <div class="time-grid">{% for time in times %}<button class="{{ time in ['2:00 PM','5:00 PM'] ? 'disabled' : '' }}">{{ time }}</button>{% endfor %}</div>
+                <a class="btn continue" href="{{ path('/book/account') }}">Continue</a>
+            </div>
+        </section>
+        {% include 'partials/summary.twig' %}
+    </div>
+</main>
+{% endblock %}
