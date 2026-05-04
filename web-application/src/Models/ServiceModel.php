@@ -4,81 +4,124 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use RedBeanPHP\R;
-use App\Helpers\BeanHelper;
+use App\Database\Database;
+use PDO;
 
 class ServiceModel
 {
-    public function getAll(): array
+    private const TABLE = 'services';
+
+    private PDO $db;
+
+    public function __construct(?PDO $db = null)
     {
-        return BeanHelper::castBeanArray(R::findAll('service', 'ORDER BY id ASC'));
+        $this->db = $db ?? Database::connect();
     }
 
-    public function getById(int $id): ?\RedBeanPHP\OODBBean
+    public function getAllServices(): array
     {
-        $bean = R::load('service', $id);
-        return BeanHelper::isValidBean($bean) ? BeanHelper::castBeanProperties($bean) : null;
+        return $this->db->query(
+            'SELECT * FROM ' . self::TABLE . ' ORDER BY category ASC, name ASC'
+        )->fetchAll();
     }
 
-    public function create(array $data): \RedBeanPHP\OODBBean
+    public function getAllServicesByUserId(int $userId): array
     {
-        $service = R::dispense('service');
-        $service->name = $data['name'] ?? '';
-        $service->category = $data['category'] ?? '';
-        $service->description = $data['description'] ?? '';
-        $service->price = (float) ($data['price'] ?? 0.0);
-        $service->duration = $data['duration'] ?? '';
-        R::store($service);
-        return BeanHelper::castBeanProperties($service);
+        $stmt = $this->db->prepare(
+            'SELECT DISTINCT s.*
+             FROM ' . self::TABLE . ' s
+             JOIN appointment a ON a.serviceID = s.ServiceID
+             WHERE a.userID = :userId
+             ORDER BY s.name ASC'
+        );
+        $stmt->execute([':userId' => $userId]);
+        return $stmt->fetchAll();
     }
 
-    public function update(int $id, array $data): ?\RedBeanPHP\OODBBean
+    public function getById(int $id): ?array
     {
-        $service = R::load('service', $id);
-        if (!BeanHelper::isValidBean($service)) {
-            return null;
+        $stmt = $this->db->prepare('SELECT * FROM ' . self::TABLE . ' WHERE ServiceID = :id');
+        $stmt->execute([':id' => $id]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public function viewDetails(int $id): string
+    {
+        $service = $this->getById($id);
+        if (!$service) {
+            return 'Service not found.';
         }
-
-        $service->name = $data['name'] ?? $service->name;
-        $service->category = $data['category'] ?? $service->category;
-        $service->description = $data['description'] ?? $service->description;
-        $service->price = (float) ($data['price'] ?? $service->price);
-        $service->duration = $data['duration'] ?? $service->duration;
-        R::store($service);
-
-        return BeanHelper::castBeanProperties($service);
+        return sprintf(
+            '%s (%s) — $%.2f, %d min. %s',
+            $service['name'],
+            $service['category'],
+            (float) $service['price'],
+            (int) $service['duration'],
+            $service['description']
+        );
     }
 
-    public function getAllServicesByCategory(string $category): array
+    public function create(array $data): ?int
     {
-        return BeanHelper::castBeanArray(R::find('service', 'category = ? ORDER BY id ASC', [$category]));
+        $stmt = $this->db->prepare(
+            'INSERT INTO ' . self::TABLE . '
+                (name, category, description, price, duration)
+             VALUES
+                (:name, :category, :description, :price, :duration)'
+        );
+
+        $ok = $stmt->execute([
+            ':name'        => $data['name'],
+            ':category'    => $data['category'],
+            ':description' => $data['description'] ?? '',
+            ':price'       => (float) $data['price'],
+            ':duration'    => (int) $data['duration'],
+        ]);
+
+        return $ok ? (int) $this->db->lastInsertId() : null;
     }
 
-    public function editService(int $id, array $data): ?\RedBeanPHP\OODBBean
+    public function update(int $id, array $data): bool
     {
-        $service = R::load('service', $id);
-        if (!BeanHelper::isValidBean($service)) {
-            return null;
-        }
-
-        $service->name = $data['name'] ?? $service->name;
-        $service->category = $data['category'] ?? $service->category;
-        $service->description = $data['description'] ?? $service->description;
-        $service->price = (float) ($data['price'] ?? $service->price);
-        $service->duration = $data['duration'] ?? $service->duration;
-        R::store($service);
-
-        return BeanHelper::castBeanProperties($service);
-    }
-
-    public function deleteServiceById(int $id): bool
-    {
-        $service = R::load('service', $id);
-        if (!BeanHelper::isValidBean($service)) {
+        $existing = $this->getById($id);
+        if (!$existing) {
             return false;
         }
-        
-        R::trash($service);
-        return true;
+
+        $stmt = $this->db->prepare(
+            'UPDATE ' . self::TABLE . '
+             SET name        = :name,
+                 category    = :category,
+                 description = :description,
+                 price       = :price,
+                 duration    = :duration
+             WHERE ServiceID = :id'
+        );
+
+        return $stmt->execute([
+            ':name'        => $data['name']        ?? $existing['name'],
+            ':category'    => $data['category']    ?? $existing['category'],
+            ':description' => $data['description'] ?? $existing['description'],
+            ':price'       => (float) ($data['price']    ?? $existing['price']),
+            ':duration'    => (int)   ($data['duration'] ?? $existing['duration']),
+            ':id'          => $id,
+        ]);
+    }
+
+    public function editServices(int $id, array $data): bool
+    {
+        return $this->update($id, $data);
+    }
+
+    public function delete(int $id): bool
+    {
+        $stmt = $this->db->prepare('DELETE FROM ' . self::TABLE . ' WHERE ServiceID = :id');
+        return $stmt->execute([':id' => $id]);
+    }
+
+    public function deleteServices(int $id): bool
+    {
+        return $this->delete($id);
     }
 }

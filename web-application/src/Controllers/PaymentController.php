@@ -23,8 +23,37 @@ class PaymentController
     {
         $this->requireLogin();
 
+        $userId = (int) $_SESSION['user_id'];
+
         return $this->render($response, 'payments/my-payments.twig', [
-            'payments' => $this->paymentModel->getAll(),
+            'payments' => $this->paymentModel->getRecentPaymentsByUserId($userId, 20),
+        ]);
+    }
+
+    // GET /payments/my-payments/{id}  — client viewing one of their own
+    public function myPaymentView(Request $request, Response $response, array $args): Response
+    {
+        $this->requireLogin();
+
+        $userId  = (int) $_SESSION['user_id'];
+        $payment = $this->paymentModel->getPaymentForUser((int) $args['id'], $userId);
+
+        if ($payment === null) {
+            return $this->renderError($response, 404, 'Payment not found.');
+        }
+
+        return $this->render($response, 'payments/my-payment-view.twig', [
+            'payment' => $payment,
+        ]);
+    }
+
+    // GET /admin/payments/insights — admin only
+    public function insights(Request $request, Response $response): Response
+    {
+        $this->requireAdmin();
+
+        return $this->render($response, 'payments/insights.twig', [
+            'insights' => $this->paymentModel->getInsights(),
         ]);
     }
 
@@ -208,7 +237,7 @@ class PaymentController
 
     private function requireAdmin(): void
     {
-        if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
+        if (empty($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'admin') {
             header('Location: /login');
             exit;
         }

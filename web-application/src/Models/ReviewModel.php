@@ -4,91 +4,123 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use RedBeanPHP\R;
-use App\Helpers\BeanHelper;
+use App\Database\Database;
+use PDO;
 
 class ReviewModel
 {
+    private const TABLE = 'reviews';
+
+    private PDO $db;
+
+    public function __construct(?PDO $db = null)
+    {
+        $this->db = $db ?? Database::connect();
+    }
+
     public function getAll(): array
     {
-        return BeanHelper::castBeanArray(R::findAll('review', 'ORDER BY id ASC'));
+        return $this->db->query(
+            'SELECT * FROM ' . self::TABLE . ' ORDER BY reviewDate DESC'
+        )->fetchAll();
     }
 
-    public function getById(int $id): ?\RedBeanPHP\OODBBean
+    public function getById(int $id): ?array
     {
-        $bean = R::load('review', $id);
-        return BeanHelper::isValidBean($bean) ? BeanHelper::castBeanProperties($bean) : null;
+        $stmt = $this->db->prepare('SELECT * FROM ' . self::TABLE . ' WHERE ReviewID = :id');
+        $stmt->execute([':id' => $id]);
+        $row = $stmt->fetch();
+        return $row ?: null;
     }
 
-    public function create(array $data): \RedBeanPHP\OODBBean
+    public function getAllReviewsByUserId(int $userId): array
     {
-        $review = R::dispense('review');
-        $review->customerId = $data['customerId'] ?? '';
-        $review->serviceId = $data['serviceId'] ?? '';
-        $review->rating = (int) ($data['rating'] ?? 0);
-        $review->comment = $data['comment'] ?? '';
-        $review->reviewDate = $data['reviewDate'] ?? '';
-        R::store($review);
-        return BeanHelper::castBeanProperties($review);
+        $stmt = $this->db->prepare(
+            'SELECT * FROM ' . self::TABLE . '
+             WHERE userID = :userId
+             ORDER BY reviewDate DESC'
+        );
+        $stmt->execute([':userId' => $userId]);
+        return $stmt->fetchAll();
     }
 
-    public function update(int $id, array $data): ?\RedBeanPHP\OODBBean
+    public function findReviewsByUserId(int $userId): bool
     {
-        $review = R::load('review', $id);
-        if (!BeanHelper::isValidBean($review)) {
+        $stmt = $this->db->prepare(
+            'SELECT 1 FROM ' . self::TABLE . ' WHERE userID = :userId LIMIT 1'
+        );
+        $stmt->execute([':userId' => $userId]);
+        return (bool) $stmt->fetchColumn();
+    }
+
+    public function viewReview(int $id): string
+    {
+        $review = $this->getById($id);
+        if (!$review) {
+            return 'Review not found.';
+        }
+        return sprintf(
+            'Review #%d — %d/5 — %s',
+            $review['ReviewID'],
+            (int) $review['rating'],
+            $review['comment'] ?? ''
+        );
+    }
+
+    public function createReview(array $data): ?int
+    {
+        $rating = (int) $data['rating'];
+        if ($rating < 1 || $rating > 5) {
             return null;
         }
 
-        $review->customerId = $data['customerId'] ?? $review->customerId;
-        $review->serviceId = $data['serviceId'] ?? $review->serviceId;
-        $review->comment = $data['comment'] ?? $review->comment;
-        $review->reviewDate = $data['reviewDate'] ?? $review->reviewDate;
-        $review->rating = (int) ($data['rating'] ?? $review->rating);
-        R::store($review);
+        $stmt = $this->db->prepare(
+            'INSERT INTO ' . self::TABLE . '
+                (userID, appointmentID, rating, comment, reviewDate)
+             VALUES
+                (:userID, :appointmentID, :rating, :comment, :reviewDate)'
+        );
 
-        return BeanHelper::castBeanProperties($review);
+        $ok = $stmt->execute([
+            ':userID'        => (int) $data['userID'],
+            ':appointmentID' => (int) $data['appointmentID'],
+            ':rating'        => $rating,
+            ':comment'       => $data['comment'] ?? null,
+            ':reviewDate'    => $data['reviewDate'] ?? date('Y-m-d'),
+        ]);
+
+        return $ok ? (int) $this->db->lastInsertId() : null;
     }
 
-
-    public function delete(int $id): bool
+    public function storeReviews(array $data): bool
     {
-        $review = R::load('review', $id);
-        if (!BeanHelper::isValidBean($review)) {
+        return $this->createReview($data) !== null;
+    }
+
+    public function editReview(int $id, array $data): bool
+    {
+        $existing = $this->getById($id);
+        if (!$existing) {
             return false;
         }
-        
-        R::trash($review);
-        return true;
-    }
 
-    public funtion getAllReviewsByCustomerId(int $customerId): array
-    {
-        return BeanHelper::castBeanArray(R::findAll('review', 'customer_id = ? ORDER BY review_date DESC', [$customerId]));
-    }
+        $stmt = $this->db->prepare(
+            'UPDATE ' . self::TABLE . '
+             SET rating  = :rating,
+                 comment = :comment
+             WHERE ReviewID = :id'
+        );
 
-    public function editReview(int $id, array $data): ?\RedBeanPHP\OODBBean
-    {
-        $review = R::load('review', $id);
-        if (!BeanHelper::isValidBean($review)) {
-            return null;
-        }
-
-        $review->comment = $data['comment'] ?? $review->comment;
-        $review->rating = (int) ($data['rating'] ?? $review->rating);
-        R::store($review);
-
-        return BeanHelper::castBeanProperties($review);
+        return $stmt->execute([
+            ':rating'  => (int) ($data['rating']  ?? $existing['rating']),
+            ':comment' => $data['comment'] ?? $existing['comment'],
+            ':id'      => $id,
+        ]);
     }
 
     public function deleteReview(int $id): bool
     {
-        $review = R::load('review', $id);
-        if (!BeanHelper::isValidBean($review)) {
-            return false;
-        }
-        
-        R::trash($review);
-        return true;
+        $stmt = $this->db->prepare('DELETE FROM ' . self::TABLE . ' WHERE ReviewID = :id');
+        return $stmt->execute([':id' => $id]);
     }
-
 }
