@@ -46,30 +46,5 @@ class PaymentModel
     }
 
 
-    public function delete(int $id): bool
-    {
-        $payment = R::load('payment', $id);
-        if (!BeanHelper::isValidBean($payment)) {
-            return false;
-        }
-        
-        R::trash($payment);
-        return true;
-    }
-
-    public function getByTeamId(int $teamId): array
-    {
-        return BeanHelper::castBeanArray(R::findAll('activity', 'team_id = ? ORDER BY activity_date DESC, activity_time DESC', [$teamId]));
-    }
-
-    public function getUpcoming(): array
-    {
-        $today = date('Y-m-d');
-        return BeanHelper::castBeanArray(R::findAll('activity', 'activity_date >= ? ORDER BY activity_date ASC, activity_time ASC', [$today]));
-    }
-
-    public function count(): int
-    {
-        return R::count('activity');
-    }
+   
 }
