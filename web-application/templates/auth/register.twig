@@ -4,17 +4,56 @@
 {% block nav %}{% endblock %}
 {% block content %}
 <main class="auth-shell">
-    <form class="auth-card" method="post" action="{{ path('/register') }}">
+    <form class="auth-card" method="post" action="{{ path('/register') }}" novalidate>
         <a class="brand auth-brand" href="{{ path('/') }}"><span>&hearts;</span> Studio Doki</a>
         <h1>Create Account</h1>
-        {% if error|default(null) %}<p class="error">{{ error }}</p>{% endif %}
-        <label>First Name<input name="firstName" value="{{ form.firstName|default('') }}" placeholder="First name" required></label>
-        <label>Last Name<input name="lastName" value="{{ form.lastName|default('') }}" placeholder="Last name" required></label>
-        <label>Email<input type="email" name="email" value="{{ form.email|default('') }}" placeholder="you@example.com" required></label>
-        <label>Phone Number<input name="phoneNumber" value="{{ form.phoneNumber|default('') }}" placeholder="Phone number"></label>
-        <label>Password<input type="password" name="password" placeholder="Password (min 8 chars)" required></label>
-        <label>Confirm Password<input type="password" name="passwordConfirm" placeholder="Confirm password" required></label>
-        <button class="btn wide">Create Account</button>
+
+        {% if errors.general is defined %}<p class="error">{{ errors.general }}</p>{% endif %}
+
+        <label>
+            First Name
+            <input name="firstName" value="{{ form.firstName|default('') }}" placeholder="First name" required>
+            {% if errors.firstName is defined %}<span class="error">{{ errors.firstName }}</span>{% endif %}
+        </label>
+
+        <label>
+            Last Name
+            <input name="lastName" value="{{ form.lastName|default('') }}" placeholder="Last name" required>
+            {% if errors.lastName is defined %}<span class="error">{{ errors.lastName }}</span>{% endif %}
+        </label>
+
+        <label>
+            Email
+            <input type="email" name="email" value="{{ form.email|default('') }}" placeholder="you@example.com" required>
+            {% if errors.email is defined %}<span class="error">{{ errors.email }}</span>{% endif %}
+        </label>
+
+        <label>
+            Phone Number
+            <input type="tel"
+                   inputmode="tel"
+                   name="phoneNumber"
+                   value="{{ form.phoneNumber|default('') }}"
+                   placeholder="514-555-0123"
+                   pattern="[0-9\-\+\s\(\)]{7,20}"
+                   title="Digits only (you can use + - spaces or parentheses)"
+                   required>
+            {% if errors.phoneNumber is defined %}<span class="error">{{ errors.phoneNumber }}</span>{% endif %}
+        </label>
+
+        <label>
+            Password
+            <input type="password" name="password" placeholder="Password (min 8 chars)" minlength="8" required>
+            {% if errors.password is defined %}<span class="error">{{ errors.password }}</span>{% endif %}
+        </label>
+
+        <label>
+            Confirm Password
+            <input type="password" name="passwordConfirm" placeholder="Confirm password" required>
+            {% if errors.passwordConfirm is defined %}<span class="error">{{ errors.passwordConfirm }}</span>{% endif %}
+        </label>
+
+        <button class="btn wide" type="submit">Create Account</button>
         <a href="{{ path('/login') }}">Already have an account?</a>
     </form>
 </main>

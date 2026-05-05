@@ -10,7 +10,7 @@
     <form method="post"
           action="{{ mode == 'edit' ? path('/admin/services/' ~ id ~ '/edit') : path('/admin/services/new') }}"
           class="admin-form"
-          {% if mode == 'edit' %}onsubmit="return confirm('Save these changes? This will update the service in the database.');"{% endif %}>
+          {% if mode == 'edit' %}data-confirm="Save these changes? This will update the service in the database." data-confirm-title="Confirm changes"{% endif %}>
 
         <label>
             Service Name
@@ -50,4 +50,5 @@
         </div>
     </form>
 </main>
+{% include 'partials/confirm-modal.twig' %}
 {% endblock %}

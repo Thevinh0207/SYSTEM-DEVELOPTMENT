@@ -2,28 +2,33 @@
 {% block title %}Services | Studio Doki{% endblock %}
 {% block content %}
 <main>
-    <section class="page-hero"><h1>Our Services</h1><p>Premium nail care tailored for you</p></section>
+    <section class="page-hero">
+        <h1>Our Services</h1>
+        <p>Premium nail care tailored for you</p>
+    </section>
+
     <section class="menu-wrap">
-        <h2>Nail Care</h2>
-        {% for row in serviceRows %}
-            <div class="menu-row"><strong>{{ row.name }}</strong><span class="time">{{ row.duration }}</span><span class="price">{{ row.price }}</span></div>
-        {% endfor %}
-        <h2>Extensions</h2>
-        {% for group in extensions %}
-            <div class="package-card">
-                <h3>{{ group.name }}</h3>
-                <div>
-                    {% for item in group.items %}
-                        <span>{{ item.0 }}<em>{{ item.1 }}</em></span>
-                    {% endfor %}
+        {% for category, rows in servicesByCat %}
+            <h2>{{ category }}</h2>
+            {% for row in rows %}
+                <div class="menu-row">
+                    <div class="menu-row-main">
+                        <strong>{{ row.name }}</strong>
+                        {% if row.description %}<p class="muted">{{ row.description }}</p>{% endif %}
+                    </div>
+                    <span class="time">{{ row.duration }}</span>
+                    <span class="price">{{ row.price }}</span>
                 </div>
-            </div>
+            {% endfor %}
+        {% else %}
+            <p class="muted" style="text-align:center; padding: 40px;">
+                No services available right now. Please check back soon.
+            </p>
         {% endfor %}
-        <h2>Nail Art</h2>
-        {% for row in nailArt %}
-            <div class="menu-row"><strong>{{ row.name }}</strong><span class="time">{{ row.duration }}</span><span class="price">{{ row.price }}</span></div>
-        {% endfor %}
-        <a class="btn centered" href="{{ path('/book') }}">Book Now</a>
+
+        {% if servicesByCat|length > 0 %}
+            <a class="btn centered" href="{{ path('/book') }}">Book Now</a>
+        {% endif %}
     </section>
 </main>
 {% endblock %}

@@ -1,0 +1,87 @@
+{% extends 'layout.twig' %}
+{% block title %}{{ mode == 'edit' ? 'Edit Appointment' : 'New Appointment' }} | Admin{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+{% block nav %}{% endblock %}
+{% block content %}
+<main class="admin-form-page">
+    <a class="back-link" href="{{ path('/admin/appointments') }}">← Back to appointments</a>
+    <h1>{{ mode == 'edit' ? 'Edit Appointment #' ~ id : 'New Appointment' }}</h1>
+
+    <form method="post"
+          action="{{ mode == 'edit' ? path('/admin/appointments/' ~ id ~ '/edit') : path('/admin/appointments/new') }}"
+          class="admin-form"
+          data-confirm="{{ mode == 'edit' ? 'Save these changes?' : 'Create this appointment?' }} This will update the database."
+          data-confirm-title="{{ mode == 'edit' ? 'Confirm changes' : 'Create appointment' }}">
+
+        {% if mode == 'create' %}
+            <fieldset class="form-section">
+                <legend>Customer details</legend>
+                <label>
+                    Name
+                    <input type="text" name="guestName" value="{{ appointment.guestName|default('') }}" required>
+                    {% if errors.guestName is defined %}<span class="error">{{ errors.guestName }}</span>{% endif %}
+                </label>
+                <div class="form-row">
+                    <label>
+                        Email
+                        <input type="email" name="guestEmail" value="{{ appointment.guestEmail|default('') }}">
+                        {% if errors.guestEmail is defined %}<span class="error">{{ errors.guestEmail }}</span>{% endif %}
+                    </label>
+                    <label>
+                        Phone
+                        <input type="text" name="guestPhone" value="{{ appointment.guestPhone|default('') }}">
+                    </label>
+                </div>
+            </fieldset>
+        {% endif %}
+
+        <label>
+            Service
+            <select name="serviceID" required>
+                <option value="">— Select a service —</option>
+                {% for s in services %}
+                    <option value="{{ s.ServiceID }}"
+                            {{ appointment.serviceID == s.ServiceID ? 'selected' : '' }}>
+                        {{ s.name }} — ${{ s.price|number_format(2) }} · {{ s.duration }} min
+                    </option>
+                {% endfor %}
+            </select>
+            {% if errors.serviceID is defined %}<span class="error">{{ errors.serviceID }}</span>{% endif %}
+        </label>
+
+        <div class="form-row">
+            <label>
+                Date
+                <input type="date" name="date" value="{{ appointment.date|default('') }}" required>
+                {% if errors.date is defined %}<span class="error">{{ errors.date }}</span>{% endif %}
+            </label>
+            <label>
+                Time
+                <input type="time" name="time" value="{{ appointment.time is defined ? appointment.time|slice(0,5) : '' }}" step="60" required>
+                {% if errors.time is defined %}<span class="error">{{ errors.time }}</span>{% endif %}
+            </label>
+        </div>
+
+        <label>
+            Status
+            <select name="status" required>
+                {% for s in ['pending','confirmed','completed','cancelled'] %}
+                    <option value="{{ s }}" {{ (appointment.status|default('pending')) == s ? 'selected' : '' }}>{{ s|capitalize }}</option>
+                {% endfor %}
+            </select>
+            {% if errors.status is defined %}<span class="error">{{ errors.status }}</span>{% endif %}
+        </label>
+
+        <label>
+            Notes
+            <textarea name="notes" rows="3" maxlength="255">{{ appointment.notes|default('') }}</textarea>
+        </label>
+
+        <div class="form-actions">
+            <a class="btn outline" href="{{ path('/admin/appointments') }}">Cancel</a>
+            <button type="submit" class="btn">{{ mode == 'edit' ? 'Save changes' : 'Create appointment' }}</button>
+        </div>
+    </form>
+</main>
+{% include 'partials/confirm-modal.twig' %}
+{% endblock %}

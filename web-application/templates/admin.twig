@@ -11,24 +11,27 @@
             <p class="admin-user muted">{{ currentUser.firstName }} {{ currentUser.lastName }}</p>
         {% endif %}
         <a class="{{ section == 'appointments' ? 'active' : '' }}" href="{{ path('/admin/appointments') }}">Appointments</a>
-        <a class="{{ section == 'services' ? 'active' : '' }}" href="{{ path('/admin/services') }}">Services</a>
-        <a class="{{ section == 'reviews' ? 'active' : '' }}" href="{{ path('/admin/reviews') }}">Reviews</a>
+        <a class="{{ section == 'services'     ? 'active' : '' }}" href="{{ path('/admin/services') }}">Services</a>
+        <a class="{{ section == 'payments'     ? 'active' : '' }}" href="{{ path('/admin/payments') }}">Payments</a>
+        <a class="{{ section == 'reviews'      ? 'active' : '' }}" href="{{ path('/admin/reviews') }}">Reviews</a>
         <form method="post" action="{{ path('/logout') }}" class="admin-logout">
             <button type="submit" class="btn outline">Log out</button>
         </form>
     </aside>
+
     <section>
         {% if flash %}
             <div class="flash flash-{{ flash.type }}">{{ flash.message }}</div>
         {% endif %}
 
+        {# ── SERVICES ──────────────────────────────────────────────── #}
         {% if section == 'services' %}
             <div class="admin-section-head">
                 <div>
                     <h1>Services</h1>
                     <p class="section-subtitle">{{ services|default([])|length }} total</p>
                 </div>
-                <a href="{{ path('/admin/services/new') }}" class="btn">+ New service</a>
+                <a href="{{ path('/admin/services/new') }}" class="btn">+ Add</a>
             </div>
 
             <div class="admin-table-wrap">
@@ -47,19 +50,80 @@
                                 <a class="btn-sm" href="{{ path('/admin/services/' ~ service.ServiceID ~ '/edit') }}">Edit</a>
                                 <form method="post"
                                       action="{{ path('/admin/services/' ~ service.ServiceID ~ '/delete') }}"
-                                      onsubmit="return confirm('Delete the “{{ service.name|e('js') }}” service? This cannot be undone.');"
+                                      data-confirm="Delete the “{{ service.name }}” service? This cannot be undone."
+                                      data-confirm-title="Delete service"
+                                      data-confirm-danger
                                       style="display:inline;">
                                     <button type="submit" class="btn-sm btn-sm-danger">Delete</button>
                                 </form>
                             </td>
                         </tr>
                     {% else %}
-                        <tr><td colspan="5" class="muted">No services yet. Create your first one above.</td></tr>
+                        <tr><td colspan="5" class="muted">No services yet.</td></tr>
                     {% endfor %}
                     </tbody>
                 </table>
             </div>
 
+        {# ── PAYMENTS ──────────────────────────────────────────────── #}
+        {% elseif section == 'payments' %}
+            <h1>Payment History</h1>
+            <p class="section-subtitle">{{ payments|default([])|length }} total</p>
+
+            {% if insights and insights.totals %}
+                <div class="insights-grid">
+                    <div class="insight-card">
+                        <span class="insight-label">Total revenue</span>
+                        <strong class="insight-value">${{ insights.totals.total_revenue|number_format(2) }}</strong>
+                    </div>
+                    <div class="insight-card">
+                        <span class="insight-label">Paid</span>
+                        <strong class="insight-value">${{ insights.totals.revenue_paid|number_format(2) }}</strong>
+                    </div>
+                    <div class="insight-card">
+                        <span class="insight-label">Pending</span>
+                        <strong class="insight-value">${{ insights.totals.revenue_pending|number_format(2) }}</strong>
+                    </div>
+                    <div class="insight-card">
+                        <span class="insight-label">Avg. payment</span>
+                        <strong class="insight-value">${{ insights.totals.average_amount|number_format(2) }}</strong>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr><th>Payer</th><th>Email / Phone</th><th>Type</th><th>Amount</th><th>Status</th><th>When</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for p in payments|default([]) %}
+                        <tr>
+                            <td>
+                                <strong>{{ p.payerName }}</strong>
+                                {% if p.payerType == 'guest' %}
+                                    <span class="tag tag-guest">Guest</span>
+                                {% else %}
+                                    <span class="tag tag-client">Client</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="muted">{{ p.payerEmail|default('—') }}</span><br>
+                                <span class="muted">{{ p.payerPhone|default('—') }}</span>
+                            </td>
+                            <td>{{ p.paymentType }}</td>
+                            <td>${{ p.paymentAmount|number_format(2) }}</td>
+                            <td><span class="status-chip status-chip-{{ p.paymentStatus == 'paid' ? 'confirmed' : 'pending' }}">{{ p.paymentStatus|capitalize }}</span></td>
+                            <td><span class="muted">{{ p.created_at|slice(0,16) }}</span></td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="6" class="muted">No payments recorded.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        {# ── REVIEWS ───────────────────────────────────────────────── #}
         {% elseif section == 'reviews' %}
             <h1>Customer Reviews</h1>
             <p class="section-subtitle">{{ reviews|default([])|length }} total</p>
@@ -86,7 +150,8 @@
                         <summary>{{ review.reply ? 'Edit reply' : 'Reply to this review' }}</summary>
                         <form method="post"
                               action="{{ path('/admin/reviews/' ~ review.ReviewID ~ '/reply') }}"
-                              onsubmit="return confirm('Save this reply? It will be visible alongside the review.');"
+                              data-confirm="Save this reply? It will be visible alongside the review."
+                              data-confirm-title="Save reply"
                               class="reply-form">
                             <textarea name="reply" rows="3" maxlength="500" placeholder="Write your reply…">{{ review.reply|default('') }}</textarea>
                             <div class="reply-actions">
@@ -95,7 +160,9 @@
                                             name="reply" value=""
                                             class="btn-sm btn-sm-danger"
                                             formnovalidate
-                                            onclick="return confirm('Remove your reply? The customer will no longer see it.');">
+                                            data-confirm="Remove your reply? The customer will no longer see it."
+                                            data-confirm-title="Delete reply"
+                                            data-confirm-danger>
                                         Delete reply
                                     </button>
                                 {% endif %}
@@ -107,9 +174,16 @@
             {% else %}
                 <p class="muted">No reviews yet.</p>
             {% endfor %}
+
+        {# ── APPOINTMENTS ──────────────────────────────────────────── #}
         {% else %}
-            <h1>Appointments</h1>
-            <p class="section-subtitle">{{ appointments|default([])|length }} total</p>
+            <div class="admin-section-head">
+                <div>
+                    <h1>Appointments</h1>
+                    <p class="section-subtitle">{{ appointments|default([])|length }} total</p>
+                </div>
+                <a href="{{ path('/admin/appointments/new') }}" class="btn">+ Add</a>
+            </div>
 
             <div class="appt-grid">
                 {% for appt in appointments|default([]) %}
@@ -127,27 +201,24 @@
                         </header>
 
                         <dl class="appt-details">
-                            <div class="appt-field">
-                                <dt>Service</dt>
-                                <dd>{{ appt.serviceName }}</dd>
-                            </div>
-                            <div class="appt-field">
-                                <dt>Date &amp; Time</dt>
-                                <dd>{{ appt.date }} · {{ appt.time }}</dd>
-                            </div>
-                            <div class="appt-field">
-                                <dt>Email</dt>
-                                <dd>{{ appt.customerEmail|default('—') }}</dd>
-                            </div>
-                            <div class="appt-field">
-                                <dt>Phone</dt>
-                                <dd>{{ appt.customerPhone|default('—') }}</dd>
-                            </div>
+                            <div class="appt-field"><dt>Service</dt><dd>{{ appt.serviceName }}</dd></div>
+                            <div class="appt-field"><dt>Date &amp; Time</dt><dd>{{ appt.date }} · {{ appt.time }}</dd></div>
+                            <div class="appt-field"><dt>Email</dt><dd>{{ appt.customerEmail|default('—') }}</dd></div>
+                            <div class="appt-field"><dt>Phone</dt><dd>{{ appt.customerPhone|default('—') }}</dd></div>
                         </dl>
 
                         <footer class="appt-card-actions">
-                            <button class="btn-sm">Edit</button>
-                            <button class="btn-sm btn-sm-danger">Cancel</button>
+                            <a class="btn-sm" href="{{ path('/admin/appointments/' ~ appt.AppointmentID ~ '/edit') }}">Edit</a>
+                            {% if appt.status != 'cancelled' %}
+                                <form method="post"
+                                      action="{{ path('/admin/appointments/' ~ appt.AppointmentID ~ '/cancel') }}"
+                                      data-confirm="Cancel this appointment for {{ appt.customerName }}? They'll need to rebook."
+                                      data-confirm-title="Cancel appointment"
+                                      data-confirm-danger
+                                      style="display:inline;">
+                                    <button type="submit" class="btn-sm btn-sm-danger">Cancel</button>
+                                </form>
+                            {% endif %}
                         </footer>
                     </article>
                 {% else %}
@@ -157,4 +228,6 @@
         {% endif %}
     </section>
 </main>
+
+{% include 'partials/confirm-modal.twig' %}
 {% endblock %}

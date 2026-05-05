@@ -88,6 +88,20 @@ class AuthController extends BaseController
         if ($form['firstName'] === '') $errors['firstName'] = 'First name is required.';
         if ($form['lastName']  === '') $errors['lastName']  = 'Last name is required.';
         if (!filter_var($form['email'], FILTER_VALIDATE_EMAIL)) $errors['email'] = 'Please enter a valid email.';
+
+        if ($form['phoneNumber'] === '') {
+            $errors['phoneNumber'] = 'Phone number is required.';
+        } else {
+            // Strip allowed formatting characters (+ - space parentheses) and ensure
+            // what's left is all digits and a sensible length.
+            $digits = preg_replace('/[\s\-\+\(\)]/', '', $form['phoneNumber']);
+            if (!ctype_digit($digits)) {
+                $errors['phoneNumber'] = 'Phone number must contain digits only (you can use + - spaces or parentheses).';
+            } elseif (strlen($digits) < 7 || strlen($digits) > 15) {
+                $errors['phoneNumber'] = 'Phone number must be between 7 and 15 digits.';
+            }
+        }
+
         if (strlen($password) < 8) $errors['password'] = 'Password must be at least 8 characters.';
         if ($password !== $passwordConfirm) $errors['passwordConfirm'] = 'Passwords do not match.';
 

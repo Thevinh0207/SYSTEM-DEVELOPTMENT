@@ -1,0 +1,80 @@
+<div id="confirm-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div class="modal-backdrop" data-modal-cancel></div>
+    <div class="modal-card" role="document">
+        <h2 id="confirm-title" class="modal-title">Are you sure?</h2>
+        <p id="confirm-message" class="modal-message">This action will be saved to the database.</p>
+        <div class="modal-actions">
+            <button type="button" class="btn outline" data-modal-cancel>Cancel</button>
+            <button type="button" class="btn modal-confirm" id="confirm-ok">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const modal      = document.getElementById('confirm-modal');
+    if (!modal) return;
+    const titleEl    = document.getElementById('confirm-title');
+    const messageEl  = document.getElementById('confirm-message');
+    const okBtn      = document.getElementById('confirm-ok');
+    let pendingSubmit = null;
+
+    function open(title, message, danger) {
+        titleEl.textContent   = title   || 'Are you sure?';
+        messageEl.textContent = message || 'This action will be saved to the database.';
+        okBtn.classList.toggle('btn-danger', !!danger);
+        okBtn.textContent = danger ? 'Yes, do it' : 'Confirm';
+        modal.hidden = false;
+        document.body.style.overflow = 'hidden';
+        okBtn.focus();
+    }
+
+    function close() {
+        modal.hidden = true;
+        document.body.style.overflow = '';
+        pendingSubmit = null;
+    }
+
+    modal.querySelectorAll('[data-modal-cancel]').forEach(el =>
+        el.addEventListener('click', close));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) close(); });
+
+    okBtn.addEventListener('click', () => {
+        if (pendingSubmit) {
+            const form = pendingSubmit;
+            pendingSubmit = null;
+            modal.hidden = true;
+            document.body.style.overflow = '';
+            form.submit();
+        }
+    });
+
+    // Hook every form (or button) with data-confirm.
+    document.addEventListener('submit', e => {
+        const form = e.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        const trigger = (form._confirmTrigger || form);
+        const confirmText = trigger.dataset.confirm || form.dataset.confirm;
+        if (!confirmText || form.dataset.confirmed === '1') return;
+        e.preventDefault();
+        pendingSubmit = form;
+        open(
+            trigger.dataset.confirmTitle || form.dataset.confirmTitle,
+            confirmText,
+            (trigger.dataset.confirmDanger ?? form.dataset.confirmDanger) !== undefined
+        );
+        form.dataset.confirmed = '1';            // mark so confirm doesn't loop
+        // Reset on next tick so future submissions re-prompt.
+        setTimeout(() => { delete form.dataset.confirmed; }, 0);
+    }, true);
+
+    // Allow individual submit buttons to carry their own confirmation text
+    // (e.g. delete-reply button inside a save-reply form).
+    document.addEventListener('click', e => {
+        const btn = e.target.closest('button[data-confirm]');
+        if (!btn) return;
+        const form = btn.form;
+        if (form) form._confirmTrigger = btn;
+    }, true);
+})();
+</script>

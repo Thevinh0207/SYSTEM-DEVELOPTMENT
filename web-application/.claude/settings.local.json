@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"/c/Users/vuong/Documents/Wampoon/php.bat\" -l public/index.php)",
+      "Bash(/c/Users/vuong/Documents/Wampoon/php.bat -r ' *)",
+      "Read(//c/Users/vuong/Documents/Wampoon/wampoon-logs/**)",
+      "Bash(\"/c/Users/vuong/Documents/Wampoon/php.bat\" -l src/Controllers/AdminPanelController.php)",
+      "Bash(\"/c/Users/vuong/Documents/Wampoon/php.bat\" -l src/Controllers/HomeController.php)",
+      "Bash(\"/c/Users/vuong/Documents/Wampoon/php.bat\" -l src/Controllers/DashboardController.php)",
+      "Bash(\"/c/Users/vuong/Documents/Wampoon/php.bat\" -l src/Controllers/AuthController.php)"
+    ]
+  }
+}

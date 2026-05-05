@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Models\AppointmentModel;
+use App\Models\PaymentModel;
 use App\Models\ReviewModel;
 use App\Models\ServiceModel;
 use App\Models\UserModel;
@@ -26,7 +27,8 @@ class AdminPanelController extends BaseController
         string $basePath,
         private AppointmentModel $appointments,
         private ServiceModel $services,
-        private ReviewModel $reviews
+        private ReviewModel $reviews,
+        private PaymentModel $payments
     ) {
         parent::__construct($twig, $basePath);
     }
@@ -45,9 +47,11 @@ class AdminPanelController extends BaseController
                 'appointments' => $this->appointments->getAllAppointements(),
                 'services'     => $this->services->getAllServices(),
                 'reviews'      => $this->reviews->getAll(),
+                'payments'     => $this->payments->getAllPayments(),
+                'insights'     => $this->payments->getInsights(),
             ];
         } catch (Throwable $e) {
-            $data = ['appointments' => [], 'services' => [], 'reviews' => []];
+            $data = ['appointments' => [], 'services' => [], 'reviews' => [], 'payments' => [], 'insights' => []];
         }
 
         return $this->render($response, 'admin.twig', [
@@ -155,6 +159,153 @@ class AdminPanelController extends BaseController
             $this->flash('error', 'Cannot delete: this service is used by existing appointments.');
         }
         return $this->redirect('/admin/services');
+    }
+
+    // ── Appointments: create / edit / cancel ─────────────────────────────
+    public function newAppointment(Request $r, Response $response): Response
+    {
+        if ($block = $this->guard()) return $block;
+
+        $form   = $_SESSION['admin_form']   ?? ['status' => 'pending'];
+        $errors = $_SESSION['admin_errors'] ?? [];
+        unset($_SESSION['admin_form'], $_SESSION['admin_errors']);
+
+        return $this->render($response, 'admin/appointment-form.twig', [
+            'mode'        => 'create',
+            'appointment' => $form,
+            'services'    => $this->services->getAllServices(),
+            'errors'      => $errors,
+        ]);
+    }
+
+    public function createAppointment(Request $r, Response $response): Response
+    {
+        if ($block = $this->guard()) return $block;
+
+        $body = (array) $r->getParsedBody();
+        $data = [
+            'serviceID'  => (int) ($body['serviceID'] ?? 0),
+            'date'       => trim((string) ($body['date']        ?? '')),
+            'time'       => trim((string) ($body['time']        ?? '')),
+            'notes'      => trim((string) ($body['notes']       ?? '')),
+            'status'     => trim((string) ($body['status']      ?? 'pending')),
+            'guestName'  => trim((string) ($body['guestName']   ?? '')),
+            'guestEmail' => trim((string) ($body['guestEmail']  ?? '')),
+            'guestPhone' => trim((string) ($body['guestPhone']  ?? '')),
+        ];
+
+        $errors = [];
+        if ($data['serviceID'] <= 0) $errors['serviceID'] = 'Service is required.';
+        if ($data['date'] === '')    $errors['date']      = 'Date is required.';
+        if ($data['time'] === '')    $errors['time']      = 'Time is required.';
+        if (!in_array($data['status'], ['pending','confirmed','completed','cancelled'], true)) {
+            $errors['status'] = 'Invalid status.';
+        }
+        if ($data['guestName'] === '') {
+            $errors['guestName'] = 'Customer name is required (admin bookings are recorded as walk-ins).';
+        }
+        if ($data['guestEmail'] === '' && $data['guestPhone'] === '') {
+            $errors['guestEmail'] = 'Provide at least an email or phone.';
+        }
+
+        if ($errors) {
+            $_SESSION['admin_errors'] = $errors;
+            $_SESSION['admin_form']   = $data;
+            return $this->redirect('/admin/appointments/new');
+        }
+
+        try {
+            $id = $this->appointments->createAppointment($data);
+            if ($id) {
+                $this->flash('success', "Appointment #{$id} created.");
+            } else {
+                $this->flash('error', 'That time slot is already booked. Pick another time.');
+                $_SESSION['admin_form'] = $data;
+                return $this->redirect('/admin/appointments/new');
+            }
+        } catch (Throwable $e) {
+            $this->flash('error', 'Could not create appointment.');
+            $_SESSION['admin_form'] = $data;
+            return $this->redirect('/admin/appointments/new');
+        }
+        return $this->redirect('/admin/appointments');
+    }
+
+    public function editAppointment(Request $r, Response $response, array $args): Response
+    {
+        if ($block = $this->guard()) return $block;
+
+        $id   = (int) $args['id'];
+        $appt = $this->appointments->getById($id);
+        if (!$appt) {
+            $this->flash('error', 'Appointment not found.');
+            return $this->redirect('/admin');
+        }
+
+        $form   = $_SESSION['admin_form']   ?? $appt;
+        $errors = $_SESSION['admin_errors'] ?? [];
+        unset($_SESSION['admin_form'], $_SESSION['admin_errors']);
+
+        return $this->render($response, 'admin/appointment-form.twig', [
+            'mode'        => 'edit',
+            'id'          => $id,
+            'appointment' => $form,
+            'services'    => $this->services->getAllServices(),
+            'errors'      => $errors,
+        ]);
+    }
+
+    public function updateAppointment(Request $r, Response $response, array $args): Response
+    {
+        if ($block = $this->guard()) return $block;
+
+        $id   = (int) $args['id'];
+        $body = (array) $r->getParsedBody();
+
+        $data = [
+            'serviceID' => (int) ($body['serviceID'] ?? 0),
+            'date'      => trim((string) ($body['date']   ?? '')),
+            'time'      => trim((string) ($body['time']   ?? '')),
+            'notes'     => trim((string) ($body['notes']  ?? '')),
+            'status'    => trim((string) ($body['status'] ?? '')),
+        ];
+
+        $errors = [];
+        if ($data['serviceID'] <= 0)   $errors['serviceID'] = 'Service is required.';
+        if ($data['date'] === '')      $errors['date']      = 'Date is required.';
+        if ($data['time'] === '')      $errors['time']      = 'Time is required.';
+        if (!in_array($data['status'], ['pending','confirmed','completed','cancelled'], true)) {
+            $errors['status'] = 'Status must be pending, confirmed, completed, or cancelled.';
+        }
+
+        if ($errors) {
+            $_SESSION['admin_errors'] = $errors;
+            $_SESSION['admin_form']   = $data + ['AppointmentID' => $id];
+            return $this->redirect("/admin/appointments/{$id}/edit");
+        }
+
+        try {
+            $ok = $this->appointments->updateAppointment($id, $data);
+            $ok ? $this->flash('success', 'Appointment updated.')
+                : $this->flash('error',   'That time slot is taken — pick another time.');
+        } catch (Throwable $e) {
+            $this->flash('error', 'Could not update appointment.');
+        }
+        return $this->redirect('/admin/appointments');
+    }
+
+    public function cancelAppointment(Request $r, Response $response, array $args): Response
+    {
+        if ($block = $this->guard()) return $block;
+
+        try {
+            $ok = $this->appointments->cancelAppointment((int) $args['id']);
+            $ok ? $this->flash('success', 'Appointment cancelled.')
+                : $this->flash('error',   'Could not cancel appointment.');
+        } catch (Throwable $e) {
+            $this->flash('error', 'Could not cancel appointment.');
+        }
+        return $this->redirect('/admin/appointments');
     }
 
     // ── Reviews: reply ───────────────────────────────────────────────────

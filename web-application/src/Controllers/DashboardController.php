@@ -34,8 +34,12 @@ class DashboardController extends BaseController
         }
 
         $userId = (int) $_SESSION['user']['id'];
-        $tab    = (string) ($r->getQueryParams()['tab'] ?? 'upcoming');
-        if (!in_array($tab, ['upcoming', 'past', 'reviews'], true)) {
+        // Reviews are no longer a separate tab — they show inline in History.
+        $tab = (string) ($r->getQueryParams()['tab'] ?? 'upcoming');
+        if ($tab === 'reviews') {
+            $tab = 'past';
+        }
+        if (!in_array($tab, ['upcoming', 'past'], true)) {
             $tab = 'upcoming';
         }
 
@@ -130,6 +134,8 @@ class DashboardController extends BaseController
             $_SESSION['dashboard_flash'] = ['type' => 'error', 'message' => 'You may have already reviewed this appointment.'];
         }
 
-        return $this->redirect('/dashboard?tab=reviews');
+        // After posting a review, return to the History tab where it now appears
+        // inline next to the appointment.
+        return $this->redirect('/dashboard?tab=past');
     }
 }

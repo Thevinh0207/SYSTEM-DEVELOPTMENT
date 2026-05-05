@@ -50,7 +50,7 @@ $twig->addFunction(new TwigFunction('asset', static fn(string $p): string =>
     $basePath . '/assets/' . ltrim($p, '/')));
 
 // ─── Controllers (manual DI) ────────────────────────────────────────────
-$home      = new HomeController($twig, $basePath);
+$home      = new HomeController($twig, $basePath, new ServiceModel());
 $auth      = new AuthController($twig, $basePath, new UserModel());
 $booking   = new BookingController(
     $twig, $basePath,
@@ -67,7 +67,8 @@ $admin     = new AdminPanelController(
     $twig, $basePath,
     new AppointmentModel(),
     new ServiceModel(),
-    new ReviewModel()
+    new ReviewModel(),
+    new PaymentModel()
 );
 
 // ─── Error handlers ─────────────────────────────────────────────────────
@@ -134,12 +135,18 @@ $app->get ('/dashboard',        [$dashboard, 'index']);
 $app->post('/dashboard/review', [$dashboard, 'postReview']);
 
 // Admin panel
-$app->get ('/admin[/{section}]',                 [$admin, 'dashboard']);
-$app->get ('/admin/services/new',                [$admin, 'newService']);
-$app->post('/admin/services/new',                [$admin, 'createService']);
-$app->get ('/admin/services/{id:[0-9]+}/edit',   [$admin, 'editService']);
-$app->post('/admin/services/{id:[0-9]+}/edit',   [$admin, 'updateService']);
-$app->post('/admin/services/{id:[0-9]+}/delete', [$admin, 'deleteService']);
-$app->post('/admin/reviews/{id:[0-9]+}/reply',   [$admin, 'replyToReview']);
+$app->get ('/admin/services/new',                    [$admin, 'newService']);
+$app->post('/admin/services/new',                    [$admin, 'createService']);
+$app->get ('/admin/services/{id:[0-9]+}/edit',       [$admin, 'editService']);
+$app->post('/admin/services/{id:[0-9]+}/edit',       [$admin, 'updateService']);
+$app->post('/admin/services/{id:[0-9]+}/delete',     [$admin, 'deleteService']);
+$app->get ('/admin/appointments/new',                [$admin, 'newAppointment']);
+$app->post('/admin/appointments/new',                [$admin, 'createAppointment']);
+$app->get ('/admin/appointments/{id:[0-9]+}/edit',   [$admin, 'editAppointment']);
+$app->post('/admin/appointments/{id:[0-9]+}/edit',   [$admin, 'updateAppointment']);
+$app->post('/admin/appointments/{id:[0-9]+}/cancel', [$admin, 'cancelAppointment']);
+$app->post('/admin/reviews/{id:[0-9]+}/reply',       [$admin, 'replyToReview']);
+// Section route — keep last so specific routes above take precedence.
+$app->get ('/admin[/{section}]', [$admin, 'dashboard']);
 
 $app->run();
