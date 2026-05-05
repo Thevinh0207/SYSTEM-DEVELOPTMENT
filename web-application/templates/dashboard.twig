@@ -14,54 +14,127 @@
             </form>
         </div>
     </header>
-    <div class="tabs"><a class="active">Upcoming Appointments</a><a>Past Appointments</a><a>My Reviews</a></div>
-    <div class="dashboard-grid">
-        {% if upcoming|default([])|length > 0 %}
-            {% set next = upcoming|first %}
-            <section class="appointment-card appointment-card-large">
-                <div>
-                    <span class="status-pill">{{ next.status|capitalize }}</span>
-                    <h2>{{ next.serviceName }}</h2>
-                    <p>{{ next.date }}</p>
-                    <p>{{ next.time }}</p>
-                    <p>Studio Doki</p>
-                    <button>Modify</button><button class="danger">Cancel</button>
-                </div>
+
+    {% if flash %}
+        <div class="flash flash-{{ flash.type }}">{{ flash.message }}</div>
+    {% endif %}
+
+    <nav class="tabs">
+        <a class="{{ tab == 'upcoming' ? 'active' : '' }}" href="{{ path('/dashboard') }}?tab=upcoming">Upcoming ({{ upcoming|length }})</a>
+        <a class="{{ tab == 'past'     ? 'active' : '' }}" href="{{ path('/dashboard') }}?tab=past">History ({{ past|length }})</a>
+        <a class="{{ tab == 'reviews'  ? 'active' : '' }}" href="{{ path('/dashboard') }}?tab=reviews">My Reviews ({{ myReviews|length }})</a>
+    </nav>
+
+    <div class="dashboard-content">
+
+        {# ── UPCOMING ───────────────────────────────────────────────── #}
+        {% if tab == 'upcoming' %}
+            <section class="dashboard-grid">
+                {% for appt in upcoming %}
+                    <article class="appointment-card">
+                        <span class="status-pill status-{{ appt.status }}">{{ appt.status|capitalize }}</span>
+                        <h2>{{ appt.serviceName }}</h2>
+                        <p><strong>Date:</strong> {{ appt.date }}</p>
+                        <p><strong>Time:</strong> {{ appt.time }}</p>
+                        <p class="muted">Studio Doki</p>
+                    </article>
+                {% else %}
+                    <article class="appointment-card empty-state">
+                        <h2>No upcoming appointments</h2>
+                        <p>Ready for your next visit?</p>
+                        <a class="btn" href="{{ path('/book') }}">Book now</a>
+                    </article>
+                {% endfor %}
             </section>
-        {% else %}
-            <section class="appointment-card appointment-card-large">
-                <div>
-                    <h2>No upcoming appointments</h2>
-                    <p>Ready to book your next visit?</p>
-                    <a class="btn" href="{{ path('/book') }}">Book now</a>
-                </div>
+
+            <aside class="dashboard-side">
+                <h2>Profile</h2>
+                <p>{{ user.firstName }} {{ user.lastName }}<br>{{ user.email }}<br>{{ user.phoneNumber }}</p>
+                <hr>
+                <h2>Visit Notes</h2>
+                <p class="muted">Please arrive 5 minutes early. Cancellations or rescheduling require at least 48 hours notice.</p>
+            </aside>
+
+        {# ── PAST / HISTORY ─────────────────────────────────────────── #}
+        {% elseif tab == 'past' %}
+            {% if reviewErrors.general is defined %}
+                <div class="flash flash-error">{{ reviewErrors.general }}</div>
+            {% endif %}
+
+            <section class="history-list">
+                {% for appt in past %}
+                    <article class="history-item">
+                        <header class="history-head">
+                            <div>
+                                <strong>{{ appt.serviceName }}</strong>
+                                <p class="muted">{{ appt.date }} · {{ appt.time }}</p>
+                            </div>
+                            <span class="status-pill status-{{ appt.status }}">{{ appt.status|capitalize }}</span>
+                        </header>
+
+                        {% if appt.status == 'completed' %}
+                            {% if reviewedIds[appt.AppointmentID] is defined %}
+                                <p class="muted">✓ You've already reviewed this visit.</p>
+                            {% else %}
+                                <details class="review-form-wrap">
+                                    <summary>Leave a review</summary>
+                                    <form method="post" action="{{ path('/dashboard/review') }}" class="review-form">
+                                        <input type="hidden" name="appointmentID" value="{{ appt.AppointmentID }}">
+
+                                        <fieldset class="rating-input">
+                                            <legend>Rating</legend>
+                                            {% for n in [5, 4, 3, 2, 1] %}
+                                                <input type="radio" id="r-{{ appt.AppointmentID }}-{{ n }}" name="rating" value="{{ n }}"
+                                                       {{ (reviewForm.appointmentID|default(0) == appt.AppointmentID and reviewForm.rating == n) ? 'checked' : '' }}
+                                                       required>
+                                                <label for="r-{{ appt.AppointmentID }}-{{ n }}" title="{{ n }} star{{ n > 1 ? 's' : '' }}">★</label>
+                                            {% endfor %}
+                                        </fieldset>
+                                        {% if reviewErrors.rating is defined %}<p class="error">{{ reviewErrors.rating }}</p>{% endif %}
+
+                                        <textarea name="comment" rows="3" maxlength="255"
+                                                  placeholder="How was your experience?">{{ reviewForm.appointmentID|default(0) == appt.AppointmentID ? reviewForm.comment|default('') : '' }}</textarea>
+                                        {% if reviewErrors.comment is defined %}<p class="error">{{ reviewErrors.comment }}</p>{% endif %}
+
+                                        <button type="submit" class="btn-sm"
+                                                onclick="return confirm('Post this review? It will be visible to the studio.');">
+                                            Post review
+                                        </button>
+                                    </form>
+                                </details>
+                            {% endif %}
+                        {% endif %}
+                    </article>
+                {% else %}
+                    <p class="muted">No past appointments yet.</p>
+                {% endfor %}
+            </section>
+
+        {# ── MY REVIEWS ─────────────────────────────────────────────── #}
+        {% elseif tab == 'reviews' %}
+            <section class="reviews-list">
+                {% for review in myReviews %}
+                    <article class="review-card">
+                        <header class="review-head">
+                            <div>
+                                <span class="muted">Reviewed on {{ review.reviewDate }}</span>
+                            </div>
+                            <span class="stars">{{ review.rating }}/5 ★</span>
+                        </header>
+                        <p class="review-comment">{{ review.comment|default('(no comment)') }}</p>
+
+                        {% if review.reply %}
+                            <div class="review-reply existing">
+                                <strong>Studio Doki replied{% if review.repliedAt %} on {{ review.repliedAt|slice(0,10) }}{% endif %}:</strong>
+                                <p>{{ review.reply }}</p>
+                            </div>
+                        {% endif %}
+                    </article>
+                {% else %}
+                    <p class="muted">You haven't left any reviews yet. Once you've completed an appointment you can review it from the History tab.</p>
+                {% endfor %}
             </section>
         {% endif %}
-        <aside class="dashboard-side">
-            <h2>Visit Notes</h2>
-            <p>Please arrive 5 minutes early. Cancellations or rescheduling require at least 48 hours notice.</p>
-            <hr>
-            <h2>Profile</h2>
-            <p>{{ user.firstName }} {{ user.lastName }}<br>{{ user.email }}<br>{{ user.phoneNumber }}</p>
-        </aside>
     </div>
-    <section class="history-section">
-        <h2>Past Appointments</h2>
-        <div class="mini-list">
-            {% for appt in past|default([]) %}
-                <div><strong>{{ appt.serviceName }}</strong><span>{{ appt.date }}</span><a href="{{ path('/dashboard') }}">View Details</a></div>
-            {% else %}
-                <div><span class="muted">No past appointments yet.</span></div>
-            {% endfor %}
-        </div>
-    </section>
-    <section class="history-section">
-        <h2>My Reviews</h2>
-        {% for review in myReviews|default([]) %}
-            <div class="customer-review"><strong>Review #{{ review.ReviewID }}</strong><span>{{ review.rating }}/5</span><p>{{ review.comment }}</p></div>
-        {% else %}
-            <p class="muted">You haven't left any reviews yet.</p>
-        {% endfor %}
-    </section>
 </main>
 {% endblock %}

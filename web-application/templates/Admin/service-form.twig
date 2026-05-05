@@ -1,0 +1,53 @@
+{% extends 'layout.twig' %}
+{% block title %}{{ mode == 'edit' ? 'Edit Service' : 'New Service' }} | Admin{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+{% block nav %}{% endblock %}
+{% block content %}
+<main class="admin-form-page">
+    <a class="back-link" href="{{ path('/admin/services') }}">← Back to services</a>
+    <h1>{{ mode == 'edit' ? 'Edit Service' : 'Create New Service' }}</h1>
+
+    <form method="post"
+          action="{{ mode == 'edit' ? path('/admin/services/' ~ id ~ '/edit') : path('/admin/services/new') }}"
+          class="admin-form"
+          {% if mode == 'edit' %}onsubmit="return confirm('Save these changes? This will update the service in the database.');"{% endif %}>
+
+        <label>
+            Service Name
+            <input type="text" name="name" value="{{ service.name|default('') }}" required>
+            {% if errors.name is defined %}<span class="error">{{ errors.name }}</span>{% endif %}
+        </label>
+
+        <label>
+            Category
+            <input type="text" name="category" value="{{ service.category|default('') }}" required>
+            {% if errors.category is defined %}<span class="error">{{ errors.category }}</span>{% endif %}
+        </label>
+
+        <label>
+            Description
+            <textarea name="description" rows="3" required>{{ service.description|default('') }}</textarea>
+            {% if errors.description is defined %}<span class="error">{{ errors.description }}</span>{% endif %}
+        </label>
+
+        <div class="form-row">
+            <label>
+                Price ($)
+                <input type="number" step="0.01" min="0" name="price" value="{{ service.price|default('') }}" required>
+                {% if errors.price is defined %}<span class="error">{{ errors.price }}</span>{% endif %}
+            </label>
+
+            <label>
+                Duration (minutes)
+                <input type="number" min="1" name="duration" value="{{ service.duration|default('') }}" required>
+                {% if errors.duration is defined %}<span class="error">{{ errors.duration }}</span>{% endif %}
+            </label>
+        </div>
+
+        <div class="form-actions">
+            <a class="btn outline" href="{{ path('/admin/services') }}">Cancel</a>
+            <button type="submit" class="btn">{{ mode == 'edit' ? 'Save changes' : 'Create service' }}</button>
+        </div>
+    </form>
+</main>
+{% endblock %}

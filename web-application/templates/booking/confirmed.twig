@@ -18,10 +18,11 @@
         {% endif %}
     </section>
     <p class="notice"><strong>Important:</strong> Please arrive 5 minutes early. Cancel or reschedule at least 48 hours in advance to avoid losing your deposit.</p>
-    {% if isGuest|default(false) %}
-        <a class="btn" href="{{ path('/book') }}">Book another appointment</a>
-    {% else %}
-        <a class="btn" href="{{ path('/dashboard') }}">Go to my dashboard</a>
-    {% endif %}
+    <div class="confirmed-actions">
+        <a class="btn" href="{{ path('/') }}">Return to home</a>
+        {% if not isGuest|default(false) %}
+            <a class="btn outline" href="{{ path('/dashboard') }}">View my dashboard</a>
+        {% endif %}
+    </div>
 </main>
 {% endblock %}

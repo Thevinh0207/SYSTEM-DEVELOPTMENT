@@ -8,7 +8,7 @@
         <section class="booking-services">
             {% if errors.service is defined %}<p class="error">{{ errors.service }}</p>{% endif %}
             {% for service in bookingServices %}
-                <form method="post" action="{{ path('/book') }}">
+                <form method="post" action="{{ path('/book/service') }}">
                     <input type="hidden" name="serviceId" value="{{ service.id }}">
                     <button type="submit" class="book-card">
                         <img src="{{ images[service.image]|default(images.brush) }}" alt="{{ service.name }}">

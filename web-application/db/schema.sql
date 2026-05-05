@@ -71,6 +71,8 @@ CREATE TABLE reviews (
     rating        INT          NOT NULL,
     comment       VARCHAR(255) NULL,
     reviewDate    DATE         NOT NULL,
+    reply         VARCHAR(500) NULL,
+    repliedAt     DATETIME     NULL,
     created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_review_user        FOREIGN KEY (userID)        REFERENCES user (userID)               ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_review_appointment FOREIGN KEY (appointmentID) REFERENCES appointment (AppointmentID) ON DELETE CASCADE ON UPDATE CASCADE,

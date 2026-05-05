@@ -22,8 +22,8 @@
     <div class="card">
         <h1>404</h1>
         <h2>Page not found</h2>
-        <p>We couldn't find <code>{{ path }}</code>. It may have moved or never existed.</p>
-        <a class="btn" href="/">Back to home</a>
+        <p>We couldn't find <code>{{ requestedPath }}</code>. It may have moved or never existed.</p>
+        <a class="btn" href="{{ path('/') }}">Back to home</a>
     </div>
 </body>
 </html>

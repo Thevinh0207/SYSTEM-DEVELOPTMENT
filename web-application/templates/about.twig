@@ -1,0 +1,82 @@
+{% extends 'layout.twig' %}
+{% block title %}About | Studio Doki{% endblock %}
+{% block content %}
+<main class="about-page">
+    <section class="about-hero">
+        <div class="about-hero-text">
+            <p class="eyebrow">About the Artist</p>
+            <h1>Hi, I'm Vivian.</h1>
+            <p class="lede">
+                Twenty-three, Montreal-born, and obsessed with the way a perfect set
+                of nails can make someone walk out the door feeling like the main character.
+            </p>
+        </div>
+        <div class="about-hero-image">
+            <img src="{{ images.brush }}" alt="Vivian working on a client's nails">
+        </div>
+    </section>
+
+    <section class="about-story">
+        <div class="story-block">
+            <h2>How it started</h2>
+            <p>
+                I painted my first French tip when I was thirteen, sitting at the kitchen
+                table with a cheap polish kit my mom picked up at the pharmacy. The next
+                morning my best friend asked who did my nails — and that was it. I spent
+                the rest of high school running a tiny salon out of my bedroom, charging
+                my classmates ten bucks a manicure and watching every nail-art tutorial
+                I could find online.
+            </p>
+        </div>
+
+        <div class="story-block">
+            <h2>Getting certified</h2>
+            <p>
+                Right out of high school I enrolled in a DEP in Esthétique — a year and
+                a half of practical training, sanitation theory, anatomy, and more
+                manicure drills than I can count. Earning that certificate was the
+                moment it stopped feeling like a hobby and started feeling like a
+                career.
+            </p>
+        </div>
+
+        <div class="story-block">
+            <h2>The leap</h2>
+            <p>
+                After my DEP I gave myself a deadline: one year of working at a chain
+                salon to learn the business side, then strike out on my own. Studio Doki
+                opened in spring 2025 above a coffee shop in Plateau, with a single
+                chair, a second-hand UV lamp, and a wall I painted blush pink at 2 a.m.
+                the night before my first client.
+            </p>
+        </div>
+
+        <div class="story-block">
+            <h2>What I love</h2>
+            <p>
+                Chrome finishes that look like liquid metal. Almond shapes. The exact
+                moment a client sees the final result and tilts her hand toward the
+                window. Skincare hauls, lip oil collections, building playlists for each
+                appointment, and the slow magic of an hour where someone gets to sit
+                still and be cared for.
+            </p>
+        </div>
+
+        <div class="story-block">
+            <h2>The studio</h2>
+            <p>
+                Studio Doki is small on purpose — one client at a time, no rushing, no
+                overlapping appointments. I source gels and acrylics from brands that
+                actually disclose their ingredients, sterilize tools after every visit,
+                and keep the playlist on shuffle. Bring a coffee. Stay a while.
+            </p>
+        </div>
+    </section>
+
+    <section class="about-cta">
+        <h2>Come hang out.</h2>
+        <p>I'd love to do your nails.</p>
+        <a class="btn" href="{{ path('/book') }}">Book an appointment</a>
+    </section>
+</main>
+{% endblock %}

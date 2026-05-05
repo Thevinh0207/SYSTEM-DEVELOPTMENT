@@ -18,41 +18,138 @@
         </form>
     </aside>
     <section>
+        {% if flash %}
+            <div class="flash flash-{{ flash.type }}">{{ flash.message }}</div>
+        {% endif %}
+
         {% if section == 'services' %}
-            <h1>Services</h1>
+            <div class="admin-section-head">
+                <div>
+                    <h1>Services</h1>
+                    <p class="section-subtitle">{{ services|default([])|length }} total</p>
+                </div>
+                <a href="{{ path('/admin/services/new') }}" class="btn">+ New service</a>
+            </div>
+
             <div class="admin-table-wrap">
-                <table>
-                    <tr><th>Service Name</th><th>Category</th><th>Price</th><th>Duration</th><th>Actions</th></tr>
-                    {% for service in services %}
+                <table class="admin-table">
+                    <thead>
+                        <tr><th>Name</th><th>Category</th><th>Price</th><th>Duration</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for service in services|default([]) %}
                         <tr>
-                            <td>{{ service.0 }}</td><td>{{ service.1 }}</td><td>{{ service.2 }}</td><td>{{ service.3 }}</td>
-                            <td><button class="icon-action">Edit</button><button class="icon-action danger">Delete</button></td>
+                            <td><strong>{{ service.name }}</strong><br><span class="muted">{{ service.description }}</span></td>
+                            <td>{{ service.category }}</td>
+                            <td>${{ service.price|number_format(2) }}</td>
+                            <td>{{ service.duration }} min</td>
+                            <td class="action-cell">
+                                <a class="btn-sm" href="{{ path('/admin/services/' ~ service.ServiceID ~ '/edit') }}">Edit</a>
+                                <form method="post"
+                                      action="{{ path('/admin/services/' ~ service.ServiceID ~ '/delete') }}"
+                                      onsubmit="return confirm('Delete the “{{ service.name|e('js') }}” service? This cannot be undone.');"
+                                      style="display:inline;">
+                                    <button type="submit" class="btn-sm btn-sm-danger">Delete</button>
+                                </form>
+                            </td>
                         </tr>
+                    {% else %}
+                        <tr><td colspan="5" class="muted">No services yet. Create your first one above.</td></tr>
                     {% endfor %}
+                    </tbody>
                 </table>
             </div>
+
         {% elseif section == 'reviews' %}
             <h1>Customer Reviews</h1>
+            <p class="section-subtitle">{{ reviews|default([])|length }} total</p>
+
             {% for review in reviews|default([]) %}
-                <div class="review-card">
-                    <strong>{{ review.name }}</strong><span class="stars" aria-label="{{ review.rating }} stars">{{ review.rating }}/5</span>
-                    <p class="muted">{{ review.meta }}</p>
-                    <p>{{ review.comment }}</p>
-                </div>
+                <article class="review-card">
+                    <header class="review-head">
+                        <div>
+                            <strong>{{ review.authorName|default('Anonymous') }}</strong>
+                            <span class="muted">· {{ review.serviceName|default('') }} · {{ review.reviewDate }}</span>
+                        </div>
+                        <span class="stars">{{ review.rating }}/5 ★</span>
+                    </header>
+                    <p class="review-comment">{{ review.comment|default('(no comment)') }}</p>
+
+                    {% if review.reply %}
+                        <div class="review-reply existing">
+                            <strong>Studio Doki replied{% if review.repliedAt %} on {{ review.repliedAt|slice(0,10) }}{% endif %}:</strong>
+                            <p>{{ review.reply }}</p>
+                        </div>
+                    {% endif %}
+
+                    <details class="reply-form-wrap">
+                        <summary>{{ review.reply ? 'Edit reply' : 'Reply to this review' }}</summary>
+                        <form method="post"
+                              action="{{ path('/admin/reviews/' ~ review.ReviewID ~ '/reply') }}"
+                              onsubmit="return confirm('Save this reply? It will be visible alongside the review.');"
+                              class="reply-form">
+                            <textarea name="reply" rows="3" maxlength="500" placeholder="Write your reply…">{{ review.reply|default('') }}</textarea>
+                            <div class="reply-actions">
+                                {% if review.reply %}
+                                    <button type="submit"
+                                            name="reply" value=""
+                                            class="btn-sm btn-sm-danger"
+                                            formnovalidate
+                                            onclick="return confirm('Remove your reply? The customer will no longer see it.');">
+                                        Delete reply
+                                    </button>
+                                {% endif %}
+                                <button type="submit" class="btn-sm">{{ review.reply ? 'Update reply' : 'Post reply' }}</button>
+                            </div>
+                        </form>
+                    </details>
+                </article>
             {% else %}
                 <p class="muted">No reviews yet.</p>
             {% endfor %}
         {% else %}
             <h1>Appointments</h1>
-            <h2>Upcoming Appointments</h2>
-            <div class="admin-appointment-list">
+            <p class="section-subtitle">{{ appointments|default([])|length }} total</p>
+
+            <div class="appt-grid">
                 {% for appt in appointments|default([]) %}
-                    <div>
-                        <strong>{{ appt.firstName }} {{ appt.lastName }} — {{ appt.serviceName }}</strong>
-                        <span>{{ appt.date }} {{ appt.time }}</span>
-                        <em>{{ appt.status|capitalize }}</em>
-                        <button>Edit</button><button class="danger">Cancel</button>
-                    </div>
+                    <article class="appt-card status-{{ appt.status }}">
+                        <header class="appt-card-head">
+                            <div class="appt-customer">
+                                <h3>{{ appt.customerName }}</h3>
+                                {% if appt.customerType == 'guest' %}
+                                    <span class="tag tag-guest">Guest</span>
+                                {% else %}
+                                    <span class="tag tag-client">Client</span>
+                                {% endif %}
+                            </div>
+                            <span class="status-chip status-chip-{{ appt.status }}">{{ appt.status|capitalize }}</span>
+                        </header>
+
+                        <dl class="appt-details">
+                            <div class="appt-field">
+                                <dt>Service</dt>
+                                <dd>{{ appt.serviceName }}</dd>
+                            </div>
+                            <div class="appt-field">
+                                <dt>Date &amp; Time</dt>
+                                <dd>{{ appt.date }} · {{ appt.time }}</dd>
+                            </div>
+                            <div class="appt-field">
+                                <dt>Email</dt>
+                                <dd>{{ appt.customerEmail|default('—') }}</dd>
+                            </div>
+                            <div class="appt-field">
+                                <dt>Phone</dt>
+                                <dd>{{ appt.customerPhone|default('—') }}</dd>
+                            </div>
+                        </dl>
+
+                        <footer class="appt-card-actions">
+                            <button class="btn-sm">Edit</button>
+                            <button class="btn-sm btn-sm-danger">Cancel</button>
+                        </footer>
+                    </article>
                 {% else %}
                     <p class="muted">No appointments scheduled.</p>
                 {% endfor %}

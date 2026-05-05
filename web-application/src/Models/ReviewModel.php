@@ -34,8 +34,39 @@ class ReviewModel
     public function getAll(): array
     {
         return $this->db->query(
-            'SELECT * FROM ' . self::TABLE . ' ORDER BY reviewDate DESC'
+            'SELECT r.*,
+                    CONCAT(u.firstName, " ", u.lastName) AS authorName,
+                    s.name AS serviceName
+             FROM ' . self::TABLE . ' r
+             JOIN user u        ON r.userID        = u.userID
+             JOIN appointment a ON r.appointmentID = a.AppointmentID
+             JOIN services s    ON a.serviceID     = s.ServiceID
+             ORDER BY r.reviewDate DESC'
         )->fetchAll();
+    }
+
+    /**
+     * Saves an admin reply to a review. Pass an empty string to clear an existing reply.
+     */
+    public function replyToReview(int $reviewId, string $reply): bool
+    {
+        $reply = trim($reply);
+
+        if ($reply === '') {
+            $stmt = $this->db->prepare(
+                'UPDATE ' . self::TABLE . '
+                 SET reply = NULL, repliedAt = NULL
+                 WHERE ReviewID = :id'
+            );
+            return $stmt->execute([':id' => $reviewId]);
+        }
+
+        $stmt = $this->db->prepare(
+            'UPDATE ' . self::TABLE . '
+             SET reply = :reply, repliedAt = NOW()
+             WHERE ReviewID = :id'
+        );
+        return $stmt->execute([':reply' => $reply, ':id' => $reviewId]);
     }
 
     public function getById(int $id): ?array

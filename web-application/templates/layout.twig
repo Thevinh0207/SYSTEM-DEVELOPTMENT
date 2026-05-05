@@ -14,8 +14,25 @@
                 <a class="{{ active == 'home' ? 'active' : '' }}" href="{{ path('/') }}">Home</a>
                 <a class="{{ active == 'services' ? 'active' : '' }}" href="{{ path('/services') }}">Services</a>
                 <a class="{{ active == 'book' ? 'active' : '' }}" href="{{ path('/book') }}">Book</a>
+                <a class="{{ active == 'about' ? 'active' : '' }}" href="{{ path('/about') }}">About</a>
                 <a class="{{ active == 'faq' ? 'active' : '' }}" href="{{ path('/faq') }}">FAQ</a>
-                <a class="account-link" href="{{ path('/login') }}" aria-label="Account">Account</a>
+                {% if currentUser %}
+                    <details class="user-menu">
+                        <summary>{{ currentUser.firstName }}{% if currentUser.role == 'admin' %} <span class="badge">admin</span>{% endif %}</summary>
+                        <div class="user-menu-panel">
+                            {% if currentUser.role == 'admin' %}
+                                <a href="{{ path('/admin') }}">Admin Dashboard</a>
+                            {% else %}
+                                <a href="{{ path('/dashboard') }}">My Dashboard</a>
+                            {% endif %}
+                            <form method="post" action="{{ path('/logout') }}">
+                                <button type="submit">Log out</button>
+                            </form>
+                        </div>
+                    </details>
+                {% else %}
+                    <a class="account-link" href="{{ path('/login') }}" aria-label="Account">Account</a>
+                {% endif %}
             </nav>
         </header>
     {% endblock %}
