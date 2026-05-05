@@ -8,6 +8,18 @@ use App\Config;
 use PDO;
 use PDOException;
 
+
+/**
+ * Database — MySQL Connection Singleton
+ * =======================================
+ * Creates a single PDO connection to the MySQL database and reuses it for
+ * every subsequent call within the same request (Singleton pattern).
+ *
+ * Why singleton? Opening a new database connection is slow. By keeping one
+ * open for the life of the request, all models share it without the overhead.
+ *
+ * Connection settings come from config/config.php → 'database' key.
+ */
 class Database
 {
     private static ?PDO $pdo = null;

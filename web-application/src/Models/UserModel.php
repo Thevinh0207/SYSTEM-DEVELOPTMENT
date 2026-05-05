@@ -8,6 +8,15 @@ use App\Config;
 use App\Database\Database;
 use PDO;
 
+/**
+ * UserModel — Database operations for the `user` table
+ * ======================================================
+ * Handles everything related to user accounts: creating them, logging in,
+ * fetching them by ID or email, updating profile details, and deletion.
+ *
+ * All methods talk to MySQL through PDO prepared statements, which protect
+ * against SQL injection by keeping data separate from the SQL query.
+ */
 class UserModel
 {
     private const TABLE = 'user';

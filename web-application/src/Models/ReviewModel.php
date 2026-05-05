@@ -7,6 +7,15 @@ namespace App\Models;
 use App\Database\Database;
 use PDO;
 
+/**
+ * ReviewModel — Database operations for the `reviews` table
+ * ===========================================================
+ * Handles customer reviews — creating, reading, editing, and deleting them.
+ *
+ * Reviews are linked to both a user (userID) and an appointment (appointmentID),
+ * so each review knows which appointment it's for and who wrote it.
+ * Rating is an integer 1–5, validated before insert.
+ */
 class ReviewModel
 {
     private const TABLE = 'reviews';
@@ -18,6 +27,10 @@ class ReviewModel
         $this->db = $db ?? Database::connect();
     }
 
+    /**
+     * Returns all reviews ordered newest first.
+     * Used on the admin reviews page and the public reviews list.
+     */
     public function getAll(): array
     {
         return $this->db->query(
@@ -33,6 +46,10 @@ class ReviewModel
         return $row ?: null;
     }
 
+    /**
+     * Returns all reviews written by a specific user.
+     * Used on the "My Reviews" tab of the customer dashboard.
+     */
     public function getAllReviewsByUserId(int $userId): array
     {
         $stmt = $this->db->prepare(
@@ -67,6 +84,13 @@ class ReviewModel
         );
     }
 
+    /**
+     * Creates a new review.
+     * Returns the new ReviewID on success, or null if the rating is invalid.
+     *
+     * Required $data keys: userID, appointmentID, rating (1–5)
+     * Optional $data keys: comment, reviewDate (defaults to today)
+     */
     public function createReview(array $data): ?int
     {
         $rating = (int) $data['rating'];
@@ -92,11 +116,19 @@ class ReviewModel
         return $ok ? (int) $this->db->lastInsertId() : null;
     }
 
+    /**
+     * Alias for createReview() — returns bool instead of ID.
+     * Kept for compatibility with the class diagram method name.
+     */
     public function storeReviews(array $data): bool
     {
         return $this->createReview($data) !== null;
     }
 
+    /**
+     * Updates a review's rating and/or comment.
+     * Falls back to existing values for any field not provided in $data.
+     */
     public function editReview(int $id, array $data): bool
     {
         $existing = $this->getById($id);

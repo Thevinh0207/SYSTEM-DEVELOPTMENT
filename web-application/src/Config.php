@@ -4,6 +4,19 @@ declare(strict_types=1);
 
 namespace App;
 
+/**
+ * Config — Application Configuration Loader
+ * ===========================================
+ * Reads config/config.php once, caches the result in memory,
+ * and provides a dot-notation getter so you can access nested values easily.
+ *
+ * Usage examples:
+ *   Config::get('database.host')      → '127.0.0.1'
+ *   Config::get('app.debug')          → true
+ *   Config::get('missing', 'default') → 'default'
+ *
+ * The class is never instantiated — all methods are static.
+ */
 class Config
 {
     private static ?array $config = null;

@@ -114,6 +114,11 @@ class ServiceModel
         return $this->update($id, $data);
     }
 
+    /**
+     * Permanently deletes a service.
+     * Note: the schema has ON DELETE RESTRICT on the appointment foreign key,
+     * so this will fail if any appointments reference this service.
+     */
     public function delete(int $id): bool
     {
         $stmt = $this->db->prepare('DELETE FROM ' . self::TABLE . ' WHERE ServiceID = :id');

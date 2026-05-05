@@ -7,6 +7,22 @@ namespace App\Models;
 use App\Database\Database;
 use PDO;
 
+/**
+ * PaymentModel — Database operations for the `payments` table
+ * =============================================================
+ * Handles the $20 deposit payments made during booking.
+ * Supports both registered users and guests (guest checkout).
+ *
+ * Key design: payments snapshot the payer's contact info at the time of payment.
+ * This means even if a user later changes their email, the payment record still
+ * shows what their email was when they paid.
+ *
+ * Table columns:
+ *   paymentID, appointmentID, paymentFrom (userID or NULL for guests),
+ *   paymentFromName, paymentFromEmail, paymentFromPhone,
+ *   paymentType, paymentAmount, paymentStatus, created_at
+ */
+
 class PaymentModel
 {
     private const TABLE = 'payments';

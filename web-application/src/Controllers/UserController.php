@@ -18,7 +18,12 @@ class UserController
 
     // ─── Auth ────────────────────────────────────────────────────────────────
 
-    // GET /login
+    /**
+     * GET /login — Show the login form.
+     * If the user is already logged in, skip the page and redirect home.
+     * The ?registered=1 query param shows a "account created" banner
+     * when redirected here after registration.
+     */
     public function login(Request $request, Response $response): Response
     {
         if (!empty($_SESSION['user_id'])) {
@@ -34,7 +39,10 @@ class UserController
         ]);
     }
 
-    // POST /login
+    /**
+     * POST /login — Process the login form.
+     * Validates input → looks up user → verifies password → sets session → redirects.
+     */
     public function loginSubmit(Request $request, Response $response): Response
     {
         $body     = (array) $request->getParsedBody();
@@ -76,7 +84,10 @@ class UserController
         return $this->redirect($response, $destination);
     }
 
-    // GET /register
+    /**
+     * GET /register — Show the registration form.
+     * Redirects home if already logged in.
+     */
     public function register(Request $request, Response $response): Response
     {
         if (!empty($_SESSION['user_id'])) {
@@ -89,7 +100,10 @@ class UserController
         ]);
     }
 
-    // POST /register
+    /**
+     * POST /register — Process the registration form.
+     * Validates → checks for duplicate email → hashes password → creates user → redirects to login.
+     */
     public function registerSubmit(Request $request, Response $response): Response
     {
         $data   = $this->getPostData($request);
@@ -109,7 +123,9 @@ class UserController
         return $this->redirect($response, '/login?registered=1');
     }
 
-    // GET /logout
+    /**
+     * GET /logout — Destroys the session and sends user to login page.
+     */
     public function logout(Request $request, Response $response): Response
     {
         session_destroy();
@@ -284,6 +300,11 @@ class UserController
 
     // ─── Validation ──────────────────────────────────────────────────────────
 
+    /**
+     * Validates the registration form fields.
+     * Returns an array of error messages keyed by field name.
+     * An empty array means everything is valid.
+     */
     private function validateRegister(array $data): array
     {
         $errors = [];

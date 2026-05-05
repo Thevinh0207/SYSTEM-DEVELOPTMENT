@@ -11,6 +11,13 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Twig\Environment;
 
+/**
+ * AppointmentController — Customer booking and admin appointment management
+ * ==========================================================================
+ * Customer-facing: book an appointment, view own appointments.
+ * Admin-facing: view all appointments, edit details, delete/cancel.
+ */
+
 class AppointmentController
 {
     public function __construct(
@@ -22,7 +29,10 @@ class AppointmentController
 
     // ─── Customer-facing ─────────────────────────────────────────────────────
 
-    // GET /appointments/book
+    /**
+     * GET /appointments/book — Show the booking form.
+     * Passes all services so the user can pick one.
+     */
     public function book(Request $request, Response $response): Response
     {
         $this->requireLogin();
@@ -34,7 +44,10 @@ class AppointmentController
         ]);
     }
 
-    // POST /appointments/book
+    /**
+     * POST /appointments/book — Submit the booking.
+     * Attaches the logged-in user's ID as the customerId, validates, then saves.
+     */
     public function bookSubmit(Request $request, Response $response): Response
     {
         $this->requireLogin();
@@ -55,7 +68,10 @@ class AppointmentController
         return $this->redirect($response, '/appointments/my-appointments?booked=1');
     }
 
-    // GET /appointments/my-appointments
+    /**
+     * GET /appointments/my-appointments — Customer's appointment list.
+     * Filters all appointments to only this user's, then enriches with service info.
+     */
     public function myAppointments(Request $request, Response $response): Response
     {
         $this->requireLogin();
@@ -85,7 +101,10 @@ class AppointmentController
 
     // ─── Admin ───────────────────────────────────────────────────────────────
 
-    // GET /admin/appointments
+    /**
+     * GET /admin/appointments — All appointments with customer + service names.
+     * Flash banners for ?deleted=1 and ?updated=1 query params.
+     */
     public function index(Request $request, Response $response): Response
     {
         $this->requireAdmin();
@@ -110,7 +129,7 @@ class AppointmentController
         ]);
     }
 
-    // GET /admin/appointments/{id}
+    /** GET /admin/appointments/{id} — View a single appointment's details. */
     public function view(Request $request, Response $response, array $args): Response
     {
         $this->requireAdmin();
@@ -123,12 +142,13 @@ class AppointmentController
 
         return $this->render($response, 'appointments/view.twig', [
             'appointment' => $appointment,
+            // Look up the related customer and service separately for the detail view
             'customer'    => $this->userModel->getById((int) $appointment->customerId),
             'service'     => $this->serviceModel->getById((int) $appointment->serviceId),
         ]);
     }
 
-    // GET /admin/appointments/{id}/edit
+    /** GET /admin/appointments/{id}/edit — Edit form pre-filled with appointment data. */
     public function edit(Request $request, Response $response, array $args): Response
     {
         $this->requireAdmin();
@@ -148,7 +168,7 @@ class AppointmentController
         ]);
     }
 
-    // POST /admin/appointments/{id}/edit
+    /** POST /admin/appointments/{id}/edit — Save changes to an appointment. */
     public function editSubmit(Request $request, Response $response, array $args): Response
     {
         $this->requireAdmin();
@@ -177,7 +197,7 @@ class AppointmentController
         return $this->redirect($response, '/admin/appointments?updated=1');
     }
 
-    // POST /admin/appointments/{id}/delete
+    /** POST /admin/appointments/{id}/delete — Cancel/delete an appointment. */
     public function delete(Request $request, Response $response, array $args): Response
     {
         $this->requireAdmin();
@@ -193,6 +213,11 @@ class AppointmentController
 
     // ─── Validation ──────────────────────────────────────────────────────────
 
+    /**
+     * Validates appointment form data.
+     * $isUpdate = true makes all fields optional (only validate if provided).
+     * $isUpdate = false (create mode) makes all fields required.
+     */
     private function validate(array $data, bool $isUpdate = false): array
     {
         $errors    = [];
@@ -241,12 +266,14 @@ class AppointmentController
         return $errors;
     }
 
+    /** Checks that a date string is a real calendar date in YYYY-MM-DD format. */
     private function isValidDate(string $date): bool
     {
         $d = \DateTime::createFromFormat('Y-m-d', $date);
         return $d && $d->format('Y-m-d') === $date;
     }
 
+    /** Checks that a time string is in HH:MM or HH:MM:SS format. */
     private function isValidTime(string $time): bool
     {
         return (bool) preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $time)

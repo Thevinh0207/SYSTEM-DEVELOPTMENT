@@ -7,6 +7,20 @@ namespace App\Models;
 use App\Database\Database;
 use PDO;
 
+/**
+ * AppointmentModel — Database operations for the `appointment` table
+ * ===================================================================
+ * Handles booking, editing, cancelling, and querying appointments.
+ *
+ * Key design decisions:
+ * - Appointments are never hard-deleted. Cancelling sets status = 'cancelled'.
+ * - The isAvailable() check prevents double-booking the same service slot.
+ * - JOIN queries are used to fetch service name and customer name in one query
+ *   rather than making separate calls for each appointment.
+ *
+ * Table columns: AppointmentID, serviceID, userID, date, time, notes, status
+ */
+
 class AppointmentModel
 {
     private const TABLE = 'appointment';
@@ -23,6 +37,11 @@ class AppointmentModel
         $this->db = $db ?? Database::connect();
     }
 
+    /**
+     * Returns all appointments with the service name and customer name joined in.
+     * Used on the admin appointments dashboard.
+     * Ordered newest first.
+     */
     public function getAllAppointements(): array
     {
         return $this->db->query(
@@ -39,6 +58,10 @@ class AppointmentModel
         )->fetchAll();
     }
 
+    /**
+     * Returns all appointments for a specific user, with the service name joined.
+     * Used on the customer dashboard "My Appointments" tab.
+     */
     public function getAllAppointmentByUserId(int $userId): array
     {
         $stmt = $this->db->prepare(
@@ -52,11 +75,16 @@ class AppointmentModel
         return $stmt->fetchAll();
     }
 
+    /** Alias for getAllAppointmentByUserId() used in some older code. */
     public function getAppointmentByUserId(int $userId): array
     {
         return $this->getAllAppointmentByUserId($userId);
     }
 
+    /**
+     * Fetches a single appointment by its primary key.
+     * Returns null if not found.
+     */
     public function getById(int $id): ?array
     {
         $stmt = $this->db->prepare('SELECT * FROM ' . self::TABLE . ' WHERE AppointmentID = :id');
@@ -80,6 +108,13 @@ class AppointmentModel
         );
     }
 
+    /**
+     * Creates a new appointment after checking availability.
+     * Returns the new AppointmentID, or null if the slot is already taken.
+     *
+     * Required $data keys: serviceID, userID, date, time
+     * Optional $data keys: notes, status
+     */
     public function createAppointment(array $data): ?int
     {
         if (!$this->isAvailable((int) $data['serviceID'], $data['date'], $data['time'])) {
@@ -125,6 +160,10 @@ class AppointmentModel
         return $this->updateAppointment($id, $data);
     }
 
+    /**
+     * Updates an appointment's details. Any field not in $data keeps its
+     * current value (safe partial update).
+     */
     public function updateAppointment(int $id, array $data): bool
     {
         $existing = $this->getById($id);
@@ -152,6 +191,9 @@ class AppointmentModel
         ]);
     }
 
+    /**
+     * Marks an appointment as cancelled.
+     */
     public function cancelAppointment(int $id): bool
     {
         $stmt = $this->db->prepare(
@@ -163,6 +205,11 @@ class AppointmentModel
         ]);
     }
 
+    /**
+     * Checks whether a service slot is free at the given date and time.
+     * A slot is available if there are no non-cancelled appointments for
+     * that same service on that date at that time.
+     */
     public function isAvailable(int $serviceId, string $date, string $time): bool
     {
         $stmt = $this->db->prepare(
