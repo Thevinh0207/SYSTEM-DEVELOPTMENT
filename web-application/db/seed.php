@@ -56,14 +56,20 @@ try {
     );
 
     $services = [
-        ['Classic Manicure',    'Manicure', 'Nail shaping, cuticle care, and regular polish.',     25.00,  30],
-        ['Gel Manicure',        'Manicure', 'Long-lasting gel polish with UV cure.',               40.00,  45],
-        ['Acrylic Full Set',    'Manicure', 'Acrylic extensions with shape and polish.',           55.00,  75],
-        ['Classic Pedicure',    'Pedicure', 'Foot soak, exfoliation, nail care, polish.',          35.00,  45],
-        ['Spa Pedicure',        'Pedicure', 'Deluxe pedicure with paraffin wax and massage.',      55.00,  60],
-        ['Nail Art (per nail)', 'Nail Art', 'Custom hand-painted nail art designs.',                5.00,  10],
-        ['Polish Change',       'Manicure', 'Quick polish removal and reapplication.',             15.00,  20],
-        ['Dip Powder',          'Manicure', 'Durable dip powder application, no UV needed.',       45.00,  50],
+        ['Gel-X Extensions',      'Extensions', 'Lightweight full-cover gel extensions with a natural look.', 60.00, 60],
+        ['Manicure',              'Nail Care',  'Nail shaping, cuticle care, and polish application.',        40.00, 45],
+        ['Colour Removal',        'Nail Care',  'Safe removal of existing polish before a new service.',      10.00, 15],
+        ['Extension Removal',     'Nail Care',  'Gentle removal of a previous extension set.',                20.00, 30],
+        ['Hard Gel Extensions',   'Extensions', 'Durable hard gel extensions with structure and shine.',      70.00, 75],
+        ['Acrylic Set',           'Extensions', 'Classic acrylic extension set shaped and polished.',         60.00, 75],
+        ['French Nail Art',       'Nail Art',   'French finish add-on.',                                      15.00, 10],
+        ['Ombre Nail Art',        'Nail Art',   'Soft ombre finish add-on.',                                  15.00, 10],
+        ['Chrome Nail Art',       'Nail Art',   'Chrome finish add-on.',                                      15.00, 10],
+        ['Marble Nail Art',       'Nail Art',   'Marble design add-on.',                                      20.00, 15],
+        ['Cat Eye Nail Art',      'Nail Art',   'Magnetic cat eye design add-on.',                            20.00, 15],
+        ['Complex Art - Level 1', 'Nail Art',   'Simple custom nail art package.',                            25.00, 30],
+        ['Complex Art - Level 2', 'Nail Art',   'Detailed custom nail art package.',                          45.00, 45],
+        ['Complex Art - Level 3', 'Nail Art',   'Advanced custom nail art package.',                          65.00, 60],
     ];
 
     foreach ($services as [$name, $cat, $desc, $price, $duration]) {
@@ -85,13 +91,13 @@ try {
 
     $appointments = [
         // [serviceID, userID, date, time, notes, status]
-        [1, 2, '2026-05-10', '10:00:00', 'First time client — pink polish.',  'confirmed'],
-        [4, 2, '2026-05-15', '14:30:00', 'Prefers neutral tones.',            'confirmed'],
-        [2, 3, '2026-05-12', '09:00:00', 'Almond shape, dark red gel.',       'pending'],
-        [5, 4, '2026-05-08', '11:00:00', 'Add paraffin treatment.',           'completed'],
-        [3, 5, '2026-05-09', '16:00:00', 'Coffin shape, medium length.',      'completed'],
-        [6, 3, '2026-05-20', '13:00:00', 'Floral art on accent nails.',       'pending'],
-        [7, 4, '2026-04-28', '10:30:00', 'Quick polish change.',              'completed'],
+        [1, 2, '2026-05-10', '10:00:00', 'Gel-X with French finish.',          'confirmed'],
+        [2, 2, '2026-05-15', '14:30:00', 'Prefers neutral tones.',             'confirmed'],
+        [5, 3, '2026-05-12', '09:00:00', 'Almond shape, dark red gel.',        'pending'],
+        [6, 4, '2026-05-08', '11:00:00', 'Medium length acrylic set.',         'completed'],
+        [1, 5, '2026-05-09', '16:00:00', 'Glossy finish.',                     'completed'],
+        [12, 3, '2026-05-20', '13:00:00', 'Floral art on accent nails.',       'pending'],
+        [3, 4, '2026-04-28', '10:30:00', 'Colour removal before new set.',     'completed'],
     ];
 
     foreach ($appointments as [$serviceID, $userID, $date, $time, $notes, $status]) {

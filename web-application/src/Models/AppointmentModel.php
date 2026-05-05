@@ -14,7 +14,7 @@ use PDO;
  *
  * Key design decisions:
  * - Appointments are never hard-deleted. Cancelling sets status = 'cancelled'.
- * - The isAvailable() check prevents double-booking the same service slot.
+ * - The isAvailable() check prevents double-booking the same studio time slot.
  * - JOIN queries are used to fetch service name and customer name in one query
  *   rather than making separate calls for each appointment.
  *
@@ -112,7 +112,7 @@ class AppointmentModel
      * Creates a new appointment after checking availability.
      * Returns the new AppointmentID, or null if the slot is already taken.
      *
-     * Required $data keys: serviceID, userID, date, time
+     * Required $data keys: serviceID, date, time
      * Optional $data keys: notes, status
      */
     public function createAppointment(array $data): ?int
@@ -171,6 +171,17 @@ class AppointmentModel
             return false;
         }
 
+        $serviceId = (int) ($data['serviceID'] ?? $existing['serviceID']);
+        $date = (string) ($data['date'] ?? $existing['date']);
+        $time = (string) ($data['time'] ?? $existing['time']);
+        $slotChanged = $serviceId !== (int) $existing['serviceID']
+            || $date !== (string) $existing['date']
+            || $time !== (string) $existing['time'];
+
+        if ($slotChanged && !$this->isAvailable($serviceId, $date, $time, $id)) {
+            return false;
+        }
+
         $stmt = $this->db->prepare(
             'UPDATE ' . self::TABLE . '
              SET serviceID = :serviceID,
@@ -182,9 +193,9 @@ class AppointmentModel
         );
 
         return $stmt->execute([
-            ':serviceID' => (int) ($data['serviceID'] ?? $existing['serviceID']),
-            ':date'      => $data['date']   ?? $existing['date'],
-            ':time'      => $data['time']   ?? $existing['time'],
+            ':serviceID' => $serviceId,
+            ':date'      => $date,
+            ':time'      => $time,
             ':notes'     => $data['notes']  ?? $existing['notes'],
             ':status'    => $data['status'] ?? $existing['status'],
             ':id'        => $id,
@@ -206,25 +217,43 @@ class AppointmentModel
     }
 
     /**
-     * Checks whether a service slot is free at the given date and time.
-     * A slot is available if there are no non-cancelled appointments for
-     * that same service on that date at that time.
+     * Checks whether the studio has no non-cancelled appointment at that date and time.
+     * The serviceId parameter is kept for older callers, but availability is studio-wide.
      */
-    public function isAvailable(int $serviceId, string $date, string $time): bool
+    public function isAvailable(int $serviceId, string $date, string $time, ?int $ignoreAppointmentId = null): bool
     {
+        $ignoreSql = $ignoreAppointmentId === null ? '' : ' AND AppointmentID != :ignoreAppointmentId';
         $stmt = $this->db->prepare(
             'SELECT COUNT(*) FROM ' . self::TABLE . '
-             WHERE serviceID = :serviceID
-               AND date = :date
+             WHERE date = :date
                AND time = :time
-               AND status != :cancelled'
+               AND status != :cancelled' . $ignoreSql
         );
-        $stmt->execute([
-            ':serviceID' => $serviceId,
+        $params = [
             ':date'      => $date,
             ':time'      => $time,
             ':cancelled' => self::STATUS_CANCELLED,
-        ]);
+        ];
+        if ($ignoreAppointmentId !== null) {
+            $params[':ignoreAppointmentId'] = $ignoreAppointmentId;
+        }
+        $stmt->execute($params);
         return (int) $stmt->fetchColumn() === 0;
+    }
+
+    public function getBookedTimesByDate(string $date): array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT TIME_FORMAT(time, "%H:%i") AS time
+             FROM ' . self::TABLE . '
+             WHERE date = :date
+               AND status != :cancelled
+             ORDER BY time ASC'
+        );
+        $stmt->execute([
+            ':date' => $date,
+            ':cancelled' => self::STATUS_CANCELLED,
+        ]);
+        return array_column($stmt->fetchAll(), 'time');
     }
 }

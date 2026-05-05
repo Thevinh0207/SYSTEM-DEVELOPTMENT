@@ -28,7 +28,10 @@ class AuthMiddleware implements MiddlewareInterface
 {
     public function process(Request $request, RequestHandler $handler): Response
     {
-        if (empty($_SESSION['user_id'])) {
+        $sessionUser = $_SESSION['user'] ?? null;
+        $userId = $sessionUser['id'] ?? $_SESSION['user_id'] ?? null;
+
+        if (empty($userId)) {
             $response = new SlimResponse();
             return $response
                 ->withHeader('Location', '/login')
@@ -38,8 +41,8 @@ class AuthMiddleware implements MiddlewareInterface
         // Logged in — attach user info to the request so route handlers can read it
         // via $request->getAttribute('user_id') and $request->getAttribute('user_role')
         $request = $request
-            ->withAttribute('user_id', (int) $_SESSION['user_id'])
-            ->withAttribute('user_role', $_SESSION['user_role'] ?? 'guest');
+            ->withAttribute('user_id', (int) $userId)
+            ->withAttribute('user_role', $sessionUser['role'] ?? $_SESSION['user_role'] ?? 'guest');
 
         return $handler->handle($request);
     }

@@ -66,10 +66,10 @@ final class ViewData
     public static function bookingServices(): array
     {
         return [
-            ['name' => 'Gel-X Extensions', 'duration' => '60 min', 'price' => '$60+', 'image' => 'brush'],
-            ['name' => 'Manicure', 'duration' => '45 min', 'price' => '$40', 'image' => 'hands'],
-            ['name' => 'Acrylic Set', 'duration' => '75 min', 'price' => '$60+', 'image' => 'acrylic'],
-            ['name' => 'Hard Gel Extensions', 'duration' => '75 min', 'price' => '$70+', 'image' => 'brush'],
+            ['id' => 1, 'name' => 'Gel-X Extensions', 'duration' => '60 min', 'price' => '$60+', 'priceNum' => 60.00, 'image' => 'brush'],
+            ['id' => 2, 'name' => 'Manicure', 'duration' => '45 min', 'price' => '$40', 'priceNum' => 40.00, 'image' => 'hands'],
+            ['id' => 3, 'name' => 'Acrylic Set', 'duration' => '75 min', 'price' => '$60+', 'priceNum' => 60.00, 'image' => 'acrylic'],
+            ['id' => 4, 'name' => 'Hard Gel Extensions', 'duration' => '75 min', 'price' => '$70+', 'priceNum' => 70.00, 'image' => 'brush'],
         ];
     }
 

@@ -60,7 +60,7 @@ $redirect = static function (string $to) use ($basePath): Response {
 // ─── ERROR HANDLERS ─────────────────────────────────────────────────────
 $renderError = static function (int $code, string $title, string $message) use ($twig, $basePath): Response {
     $response = new Psr7Response();
-    $html = $twig->render('errors/generic.twig', [
+    $html = $twig->render('Errors/generic.twig', [
         'code' => $code, 'title' => $title, 'message' => $message,
     ]);
     $response->getBody()->write($html);
@@ -71,7 +71,7 @@ $errorMiddleware->setErrorHandler(
     HttpNotFoundException::class,
     static function (Request $request, Throwable $e) use ($twig): Response {
         $response = new Psr7Response();
-        $html = $twig->render('errors/404.twig', [
+        $html = $twig->render('Errors/404.twig', [
             'path'   => $request->getUri()->getPath(),
             'locale' => 'en',
         ]);
@@ -139,6 +139,9 @@ $app->get('/book', function (Request $request, Response $response) use ($render)
         'priceNum' => (float) $s['price'],
         'image'    => 'brush',  // template fallback
     ], $services);
+    if ($bookingServices === []) {
+        $bookingServices = ViewData::bookingServices();
+    }
 
     return $render($response, 'booking/service.twig', [
         'active'          => 'book',
@@ -163,8 +166,26 @@ $app->post('/book', function (Request $request, Response $response) use ($redire
     }
 
     if (!$service) {
-        $_SESSION['booking_errors'] = ['service' => 'That service is no longer available.'];
-        return $redirect('/book');
+        $demoService = null;
+        foreach (ViewData::bookingServices() as $candidate) {
+            if ((int) $candidate['id'] === $serviceId) {
+                $demoService = $candidate;
+                break;
+            }
+        }
+        if (!$demoService) {
+            $_SESSION['booking_errors'] = ['service' => 'That service is no longer available.'];
+            return $redirect('/book');
+        }
+
+        $_SESSION['booking'] = [
+            'serviceId' => (int) $demoService['id'],
+            'service'   => $demoService['name'],
+            'duration'  => $demoService['duration'],
+            'price'     => $demoService['price'],
+            'priceNum'  => (float) $demoService['priceNum'],
+        ];
+        return $redirect('/book/date');
     }
 
     $_SESSION['booking'] = [
@@ -209,6 +230,22 @@ $app->post('/book/date', function (Request $request, Response $response) use ($r
 
     if ($time === '') {
         $errors['time'] = 'Please choose a time.';
+    }
+
+    if (!$errors && !empty($_SESSION['booking']['serviceId'])) {
+        try {
+            $available = (new AppointmentModel())->isAvailable(
+                (int) $_SESSION['booking']['serviceId'],
+                $date,
+                $time
+            );
+            if (!$available) {
+                $errors['time'] = 'That time slot is no longer available. Please choose another time.';
+            }
+        } catch (Throwable $e) {
+            // Keep the public booking demo usable before the local database is seeded.
+            // The final save step still protects real bookings once the database is ready.
+        }
     }
 
     if ($errors) {
@@ -451,6 +488,8 @@ $app->post('/login', function (Request $request, Response $response) use ($redir
         'phoneNumber' => $user['phoneNumber'],
         'role'        => $user['role'],
     ];
+    $_SESSION['user_id'] = $_SESSION['user']['id'];
+    $_SESSION['user_role'] = $_SESSION['user']['role'];
 
     return $redirect($user['role'] === UserModel::ROLE_ADMIN ? '/admin' : '/dashboard');
 });
@@ -516,6 +555,8 @@ $app->post('/register', function (Request $request, Response $response) use ($re
         'phoneNumber' => $created['phoneNumber'],
         'role'        => $created['role'],
     ];
+    $_SESSION['user_id'] = $_SESSION['user']['id'];
+    $_SESSION['user_role'] = $_SESSION['user']['role'];
 
     return $redirect($created['role'] === UserModel::ROLE_ADMIN ? '/admin' : '/dashboard');
 });

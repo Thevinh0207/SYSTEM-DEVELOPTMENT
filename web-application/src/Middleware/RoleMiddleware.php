@@ -36,6 +36,7 @@ class RoleMiddleware implements MiddlewareInterface
     public function process(Request $request, RequestHandler $handler): Response
     {
         $role = $this->resolveRole();
+        $userId = $_SESSION['user']['id'] ?? $_SESSION['user_id'] ?? null;
 
         if (!in_array($role, $this->allowed, true)) {
             return $this->deny($role);
@@ -44,17 +45,20 @@ class RoleMiddleware implements MiddlewareInterface
         return $handler->handle(
             $request
                 ->withAttribute('user_role', $role)
-                ->withAttribute('user_id', isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null)
+                ->withAttribute('user_id', $userId !== null ? (int) $userId : null)
         );
     }
 
     private function resolveRole(): string
     {
-        if (empty($_SESSION['user_id'])) {
+        $sessionUser = $_SESSION['user'] ?? null;
+        $userId = $sessionUser['id'] ?? $_SESSION['user_id'] ?? null;
+
+        if (empty($userId)) {
             return self::GUEST;
         }
 
-        $role = $_SESSION['user_role'] ?? self::CLIENT;
+        $role = $sessionUser['role'] ?? $_SESSION['user_role'] ?? self::CLIENT;
 
         return in_array($role, self::ALL_ROLES, true) ? $role : self::CLIENT;
     }
