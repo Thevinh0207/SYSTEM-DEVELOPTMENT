@@ -5,11 +5,19 @@
     <h1>Book Your Appointment</h1>
     <p class="subtitle">Step 5 of 6: Deposit Payment</p>
     <div class="booking-grid">
-        <form class="form-panel" action="{{ path('/book/confirmed') }}" method="get">
+        <form class="form-panel" action="{{ path('/book/payment') }}" method="post" novalidate>
+            {% if errors.general is defined %}<p class="error">{{ errors.general }}</p>{% endif %}
             <p class="notice">A $20 non-refundable deposit is required to secure your appointment. This will be applied to your total service cost.</p>
-            <label>Card Number<input placeholder="1234 5678 9012 3456"></label>
-            <div class="form-row"><label>Expiry Date<input placeholder="MM/YY"></label><label>CVV<input placeholder="123"></label></div>
-            <label>Cardholder Name<input value="Sarah Johnson"></label>
+            <label>Card Number<input name="cardNumber" placeholder="1234 5678 9012 3456" required></label>
+            {% if errors.cardNumber is defined %}<p class="error">{{ errors.cardNumber }}</p>{% endif %}
+            <div class="form-row">
+                <label>Expiry Date<input name="cardExpiry" placeholder="MM/YY" required></label>
+                <label>CVV<input name="cardCvv" placeholder="123" required></label>
+            </div>
+            {% if errors.cardExpiry is defined %}<p class="error">{{ errors.cardExpiry }}</p>{% endif %}
+            {% if errors.cardCvv is defined %}<p class="error">{{ errors.cardCvv }}</p>{% endif %}
+            <label>Cardholder Name<input name="cardName" value="{{ form.cardName|default('') }}" required></label>
+            {% if errors.cardName is defined %}<p class="error">{{ errors.cardName }}</p>{% endif %}
             <button class="btn">Pay $20 Deposit</button>
         </form>
         {% include 'partials/summary.twig' %}

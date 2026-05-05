@@ -6,17 +6,34 @@
     <p class="subtitle">Step 2 of 6: Select Date &amp; Time</p>
     <div class="booking-grid">
         <section class="date-time">
-            <div>
+            <form method="post" action="{{ path('/book/date') }}" novalidate>
+                {% if errors.general is defined %}
+                    <div class="error">{{ errors.general }}</div>
+                {% endif %}
+
                 <h2>Select Date</h2>
-                <div class="calendar"><h3>March 2026</h3><div class="week">S M T W T F S</div>
-                    <div class="days">{% for day in days %}<button class="{{ day == 30 ? 'picked' : (day > 27 ? 'disabled' : '') }}">{{ day }}</button>{% endfor %}</div>
-                </div>
-            </div>
-            <div>
+                <label class="block">
+                    <input type="date"
+                           name="date"
+                           required
+                           min="{{ "now"|date('Y-m-d') }}"
+                           value="{{ form.date|default('') }}">
+                </label>
+                {% if errors.date is defined %}<p class="error">{{ errors.date }}</p>{% endif %}
+
                 <h2>Select Time</h2>
-                <div class="time-grid">{% for time in times %}<button class="{{ time in ['2:00 PM','5:00 PM'] ? 'disabled' : '' }}">{{ time }}</button>{% endfor %}</div>
-                <a class="btn continue" href="{{ path('/book/account') }}">Continue</a>
-            </div>
+                <label class="block">
+                    <select name="time" required>
+                        <option value="">— Choose a time —</option>
+                        {% for time in times %}
+                            <option value="{{ time }}" {{ form.time|default('') == time ? 'selected' : '' }}>{{ time }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                {% if errors.time is defined %}<p class="error">{{ errors.time }}</p>{% endif %}
+
+                <button class="btn continue" type="submit">Continue</button>
+            </form>
         </section>
         {% include 'partials/summary.twig' %}
     </div>

@@ -4,16 +4,24 @@
 <main class="confirmed">
     <div class="check">✓</div>
     <h1>Appointment Confirmed!</h1>
-    <p>We have sent a confirmation email to sarah@example.com</p>
+    {% if booking.email is defined and booking.email %}
+        <p>We have sent a confirmation email to {{ booking.email }}</p>
+    {% endif %}
     <section class="details-card">
         <h2>Appointment Details</h2>
-        <div><span>Service</span><strong>Gel-X Extensions + French</strong></div>
-        <div><span>Date</span><strong>Sunday, March 30, 2026</strong></div>
-        <div><span>Time</span><strong>2:00 PM</strong></div>
+        <div><span>Service</span><strong>{{ booking.service|default('—') }}</strong></div>
+        <div><span>Date</span><strong>{{ booking.date|default('—') }}</strong></div>
+        <div><span>Time</span><strong>{{ booking.time|default('—') }}</strong></div>
         <div><span>Location</span><strong>Studio Doki</strong></div>
-        <div><span>Deposit Paid</span><strong class="success">$20.00</strong></div>
+        {% if booking.deposit is defined %}
+            <div><span>Deposit Paid</span><strong class="success">${{ booking.deposit|number_format(2) }}</strong></div>
+        {% endif %}
     </section>
     <p class="notice"><strong>Important:</strong> Please arrive 5 minutes early. Cancel or reschedule at least 48 hours in advance to avoid losing your deposit.</p>
-    <a class="btn" href="{{ path('/dashboard') }}">Add to Calendar</a>
+    {% if isGuest|default(false) %}
+        <a class="btn" href="{{ path('/book') }}">Book another appointment</a>
+    {% else %}
+        <a class="btn" href="{{ path('/dashboard') }}">Go to my dashboard</a>
+    {% endif %}
 </main>
 {% endblock %}

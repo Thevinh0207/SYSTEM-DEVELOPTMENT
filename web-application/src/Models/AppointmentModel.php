@@ -26,10 +26,15 @@ class AppointmentModel
     public function getAllAppointements(): array
     {
         return $this->db->query(
-            'SELECT a.*, s.name AS serviceName, u.firstName, u.lastName
+            'SELECT a.*,
+                    s.name AS serviceName,
+                    COALESCE(CONCAT(u.firstName, " ", u.lastName), a.guestName, "Guest") AS customerName,
+                    COALESCE(u.email,       a.guestEmail) AS customerEmail,
+                    COALESCE(u.phoneNumber, a.guestPhone) AS customerPhone,
+                    CASE WHEN a.userID IS NULL THEN "guest" ELSE "client" END AS customerType
              FROM ' . self::TABLE . ' a
              JOIN services s ON a.serviceID = s.ServiceID
-             JOIN user u     ON a.userID    = u.userID
+             LEFT JOIN user u ON a.userID    = u.userID
              ORDER BY a.date DESC, a.time DESC'
         )->fetchAll();
     }
@@ -81,20 +86,35 @@ class AppointmentModel
             return null;
         }
 
+        $userID = $data['userID'] ?? null;
+        $userID = ($userID === null || $userID === '') ? null : (int) $userID;
+
+        // Guests must supply contact info; logged-in users can leave it blank.
+        $guestName  = $userID === null ? trim((string) ($data['guestName']  ?? '')) : null;
+        $guestEmail = $userID === null ? trim((string) ($data['guestEmail'] ?? '')) : null;
+        $guestPhone = $userID === null ? trim((string) ($data['guestPhone'] ?? '')) : null;
+
+        if ($userID === null && ($guestName === '' || ($guestEmail === '' && $guestPhone === ''))) {
+            return null;
+        }
+
         $stmt = $this->db->prepare(
             'INSERT INTO ' . self::TABLE . '
-                (serviceID, userID, date, time, notes, status)
+                (serviceID, userID, guestName, guestEmail, guestPhone, date, time, notes, status)
              VALUES
-                (:serviceID, :userID, :date, :time, :notes, :status)'
+                (:serviceID, :userID, :guestName, :guestEmail, :guestPhone, :date, :time, :notes, :status)'
         );
 
         $stmt->execute([
-            ':serviceID' => (int) $data['serviceID'],
-            ':userID'    => (int) $data['userID'],
-            ':date'      => $data['date'],
-            ':time'      => $data['time'],
-            ':notes'     => $data['notes'] ?? null,
-            ':status'    => $data['status'] ?? self::STATUS_PENDING,
+            ':serviceID'  => (int) $data['serviceID'],
+            ':userID'     => $userID,
+            ':guestName'  => $guestName  !== null && $guestName  !== '' ? $guestName  : null,
+            ':guestEmail' => $guestEmail !== null && $guestEmail !== '' ? $guestEmail : null,
+            ':guestPhone' => $guestPhone !== null && $guestPhone !== '' ? $guestPhone : null,
+            ':date'       => $data['date'],
+            ':time'       => $data['time'],
+            ':notes'      => $data['notes'] ?? null,
+            ':status'     => $data['status'] ?? self::STATUS_PENDING,
         ]);
 
         return (int) $this->db->lastInsertId();

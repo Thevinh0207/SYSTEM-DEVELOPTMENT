@@ -92,11 +92,7 @@ final class ViewData
 
     public static function reviews(): array
     {
-        return [
-            ['name' => 'Sarah Johnson', 'meta' => 'Acrylic Set + Chrome - February 20, 2026', 'stars' => '5/5', 'comment' => 'Amazing service! Vivian was so professional and the results were exactly what I wanted. The chrome finish is stunning and has lasted 3 weeks without chipping. Highly recommend!'],
-            ['name' => 'Emma Davis', 'meta' => 'Gel-X Extensions - March 10, 2026', 'stars' => '5/5', 'comment' => 'Love my new nails! The attention to detail is incredible. The studio has such a calming atmosphere and Vivian made me feel so comfortable.'],
-            ['name' => 'Olivia Brown', 'meta' => 'Manicure + Ombre - March 18, 2026', 'stars' => '4/5', 'comment' => 'Great experience overall. The ombre came out beautifully and the color lasted longer than expected. Will definitely be back!'],
-        ];
+        return [];
     }
 
     public static function bookingTimes(): array

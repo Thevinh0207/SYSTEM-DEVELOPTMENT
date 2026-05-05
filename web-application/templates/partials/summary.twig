@@ -1,21 +1,40 @@
 {% set summary = summary|default({}) %}
-{% set service = summary.service|default('Gel-X Extensions + French') %}
-{% set total = summary.total|default(75) %}
-{% set deposit = summary.deposit|default(20) %}
+{% set service = summary.service|default('—') %}
+{% set priceLabel = summary.price|default('') %}
+
+{# Try to extract a numeric price from "$60+" / "$40" — falls back to 0. #}
+{% set numeric = priceLabel|default('')|replace({'$':'', '+':'', ' ':''}) %}
+{% set total = numeric matches '/^\\d+(\\.\\d+)?$/' ? numeric|number_format(2) : null %}
+{% set deposit = total ? 20 : 0 %}
+
 <aside class="summary-card">
     <h2>Appointment Summary</h2>
+
     <div class="summary-line muted">Service</div>
     <p>{{ service }}</p>
-    {% if summary.date is defined %}
+
+    {% if summary.date is defined and summary.date %}
         <div class="summary-line muted">Date &amp; Time</div>
-        <p>{{ summary.date }}</p>
+        <p>{{ summary.date }}{% if summary.time is defined %} at {{ summary.time }}{% endif %}</p>
     {% endif %}
-    {% if summary.name is defined %}
+
+    {% if summary.contact is defined and summary.contact.firstName is defined %}
         <div class="summary-line muted">Name</div>
-        <p>{{ summary.name }}</p>
+        <p>{{ summary.contact.firstName }} {{ summary.contact.lastName }}</p>
     {% endif %}
+
     <hr>
-    <div class="summary-row"><span>Service</span><strong>${{ total|number_format(2) }}</strong></div>
-    <div class="summary-row"><span>Deposit</span><strong>${{ deposit|number_format(2) }}</strong></div>
-    <div class="summary-row"><span>Due at Appointment</span><strong class="pink">${{ (total - deposit)|number_format(2) }}</strong></div>
+
+    <div class="summary-row">
+        <span>Service</span>
+        <strong>{% if total %}${{ total }}{% else %}{{ priceLabel ?: '—' }}{% endif %}</strong>
+    </div>
+    <div class="summary-row">
+        <span>Deposit</span>
+        <strong>${{ deposit|number_format(2) }}</strong>
+    </div>
+    <div class="summary-row">
+        <span>Due at Appointment</span>
+        <strong class="pink">{% if total %}${{ (numeric - deposit)|number_format(2) }}{% else %}—{% endif %}</strong>
+    </div>
 </aside>

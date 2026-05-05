@@ -4,15 +4,16 @@
 {% block nav %}{% endblock %}
 {% block content %}
 <main class="auth-shell">
-    <form class="auth-card" method="get" action="{{ path('/dashboard') }}">
+    <form class="auth-card" method="post" action="{{ path('/register') }}">
         <a class="brand auth-brand" href="{{ path('/') }}"><span>&hearts;</span> Studio Doki</a>
         <h1>Create Account</h1>
-        <label>First Name<input placeholder="Sarah"></label>
-        <label>Last Name<input placeholder="Johnson"></label>
-        <label>Email<input placeholder="you@example.com"></label>
-        <label>Phone Number<input placeholder="(555) 123-4567"></label>
-        <label>Password<input type="password" placeholder="Password"></label>
-        <label>Confirm Password<input type="password" placeholder="Confirm password"></label>
+        {% if error|default(null) %}<p class="error">{{ error }}</p>{% endif %}
+        <label>First Name<input name="firstName" value="{{ form.firstName|default('') }}" placeholder="First name" required></label>
+        <label>Last Name<input name="lastName" value="{{ form.lastName|default('') }}" placeholder="Last name" required></label>
+        <label>Email<input type="email" name="email" value="{{ form.email|default('') }}" placeholder="you@example.com" required></label>
+        <label>Phone Number<input name="phoneNumber" value="{{ form.phoneNumber|default('') }}" placeholder="Phone number"></label>
+        <label>Password<input type="password" name="password" placeholder="Password (min 8 chars)" required></label>
+        <label>Confirm Password<input type="password" name="passwordConfirm" placeholder="Confirm password" required></label>
         <button class="btn wide">Create Account</button>
         <a href="{{ path('/login') }}">Already have an account?</a>
     </form>

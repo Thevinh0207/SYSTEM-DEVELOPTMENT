@@ -408,6 +408,82 @@ nav a {
     gap: 12px;
 }
 
+/* ── Booking date/time form (real inputs) ───────────────────────────── */
+.date-time form {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 28px 34px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+}
+
+.date-time form h2 {
+    margin: 12px 0 4px;
+    font-size: 1.1rem;
+}
+
+.date-time form h2:first-of-type { margin-top: 0; }
+
+.date-time form label.block {
+    display: block;
+    width: 100%;
+}
+
+.date-time form input[type="date"],
+.date-time form select {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fdf8fa;
+    font-size: 1rem;
+    font-family: inherit;
+    color: #1a1a1a;
+    transition: border-color .15s, box-shadow .15s;
+}
+
+.date-time form input[type="date"]:focus,
+.date-time form select:focus {
+    outline: none;
+    border-color: var(--pink);
+    box-shadow: 0 0 0 3px rgba(214, 51, 108, .15);
+}
+
+.date-time form .continue {
+    align-self: flex-start;
+    margin-top: 16px;
+    padding: 14px 36px;
+}
+
+.date-time form .error {
+    color: #c0392b;
+    margin: -4px 0 0;
+    font-size: .9rem;
+}
+
+/* Form field error messages elsewhere */
+.form-panel .error,
+.error {
+    color: #c0392b;
+    font-size: .9rem;
+    margin: 4px 0;
+}
+
+/* Admin sidebar logout */
+.admin-user      { margin: 4px 0 16px; font-size: .85rem; }
+.admin-logout    { margin-top: 24px; }
+.admin-logout button { width: 100%; }
+.dashboard-actions { display: flex; gap: 12px; align-items: center; }
+.btn.outline {
+    background: #fff;
+    color: var(--pink);
+    border: 1px solid var(--pink);
+}
+.btn.outline:hover { background: rgba(214, 51, 108, .08); }
+
 .time-grid button {
     min-height: 52px;
     border: 1px solid var(--line);

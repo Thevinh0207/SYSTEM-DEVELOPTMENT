@@ -4,42 +4,64 @@
 <main class="user-dashboard">
     <header class="dashboard-head">
         <div>
-            <h1>Hello, Sarah!</h1>
+            <h1>Hello, {{ user.firstName }}!</h1>
             <p>Manage your appointments and reviews</p>
         </div>
-        <a class="btn" href="{{ path('/book') }}">Book Again</a>
+        <div class="dashboard-actions">
+            <a class="btn" href="{{ path('/book') }}">Book Again</a>
+            <form method="post" action="{{ path('/logout') }}" style="display:inline;">
+                <button type="submit" class="btn outline">Log out</button>
+            </form>
+        </div>
     </header>
     <div class="tabs"><a class="active">Upcoming Appointments</a><a>Past Appointments</a><a>My Reviews</a></div>
     <div class="dashboard-grid">
-        <section class="appointment-card appointment-card-large">
-            <div>
-                <span class="status-pill">Upcoming</span>
-                <h2>Gel-X Extensions + French</h2>
-                <p>Sunday, March 30, 2026</p>
-                <p>2:00 PM - 3:00 PM</p>
-                <p>Studio Doki - 123 Main Street</p>
-                <button>Modify</button><button class="danger">Cancel</button>
-            </div>
-            <div class="appointment-price"><strong>$75.00</strong><span>Deposit Paid</span></div>
-        </section>
+        {% if upcoming|default([])|length > 0 %}
+            {% set next = upcoming|first %}
+            <section class="appointment-card appointment-card-large">
+                <div>
+                    <span class="status-pill">{{ next.status|capitalize }}</span>
+                    <h2>{{ next.serviceName }}</h2>
+                    <p>{{ next.date }}</p>
+                    <p>{{ next.time }}</p>
+                    <p>Studio Doki</p>
+                    <button>Modify</button><button class="danger">Cancel</button>
+                </div>
+            </section>
+        {% else %}
+            <section class="appointment-card appointment-card-large">
+                <div>
+                    <h2>No upcoming appointments</h2>
+                    <p>Ready to book your next visit?</p>
+                    <a class="btn" href="{{ path('/book') }}">Book now</a>
+                </div>
+            </section>
+        {% endif %}
         <aside class="dashboard-side">
             <h2>Visit Notes</h2>
             <p>Please arrive 5 minutes early. Cancellations or rescheduling require at least 48 hours notice.</p>
             <hr>
             <h2>Profile</h2>
-            <p>Sarah Johnson<br>sarah@example.com<br>(555) 123-4567</p>
+            <p>{{ user.firstName }} {{ user.lastName }}<br>{{ user.email }}<br>{{ user.phoneNumber }}</p>
         </aside>
     </div>
     <section class="history-section">
         <h2>Past Appointments</h2>
         <div class="mini-list">
-            <div><strong>Acrylic Set + Chrome</strong><span>February 20, 2026</span><a>Leave Review</a></div>
-            <div><strong>Manicure + Ombre</strong><span>January 12, 2026</span><a>View Details</a></div>
+            {% for appt in past|default([]) %}
+                <div><strong>{{ appt.serviceName }}</strong><span>{{ appt.date }}</span><a href="{{ path('/dashboard') }}">View Details</a></div>
+            {% else %}
+                <div><span class="muted">No past appointments yet.</span></div>
+            {% endfor %}
         </div>
     </section>
     <section class="history-section">
         <h2>My Reviews</h2>
-        <div class="customer-review"><strong>Acrylic Set + Chrome</strong><span>5/5</span><p>Amazing service! The chrome finish lasted beautifully.</p></div>
+        {% for review in myReviews|default([]) %}
+            <div class="customer-review"><strong>Review #{{ review.ReviewID }}</strong><span>{{ review.rating }}/5</span><p>{{ review.comment }}</p></div>
+        {% else %}
+            <p class="muted">You haven't left any reviews yet.</p>
+        {% endfor %}
     </section>
 </main>
 {% endblock %}

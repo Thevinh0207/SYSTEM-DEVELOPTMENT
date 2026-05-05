@@ -7,9 +7,15 @@
     <aside>
         <span class="admin-pill">ADMIN ONLY</span>
         <h2>Studio Doki</h2>
+        {% if currentUser %}
+            <p class="admin-user muted">{{ currentUser.firstName }} {{ currentUser.lastName }}</p>
+        {% endif %}
         <a class="{{ section == 'appointments' ? 'active' : '' }}" href="{{ path('/admin/appointments') }}">Appointments</a>
         <a class="{{ section == 'services' ? 'active' : '' }}" href="{{ path('/admin/services') }}">Services</a>
         <a class="{{ section == 'reviews' ? 'active' : '' }}" href="{{ path('/admin/reviews') }}">Reviews</a>
+        <form method="post" action="{{ path('/logout') }}" class="admin-logout">
+            <button type="submit" class="btn outline">Log out</button>
+        </form>
     </aside>
     <section>
         {% if section == 'services' %}
@@ -27,31 +33,29 @@
             </div>
         {% elseif section == 'reviews' %}
             <h1>Customer Reviews</h1>
-            {% for review in reviews %}
+            {% for review in reviews|default([]) %}
                 <div class="review-card">
-                    <strong>{{ review.name }}</strong><span class="stars" aria-label="{{ review.stars }} stars"></span>
+                    <strong>{{ review.name }}</strong><span class="stars" aria-label="{{ review.rating }} stars">{{ review.rating }}/5</span>
                     <p class="muted">{{ review.meta }}</p>
                     <p>{{ review.comment }}</p>
-                    <a>Reply to {{ review.name }}</a>
-                    {% if loop.first %}
-                        <div class="reply-box"><strong>Draft reply</strong><p>Thank you so much, Sarah. I am so happy you loved the chrome finish!</p></div>
-                    {% endif %}
                 </div>
+            {% else %}
+                <p class="muted">No reviews yet.</p>
             {% endfor %}
         {% else %}
             <h1>Appointments</h1>
-            <div class="admin-panel">
-                <div class="calendar-head"><h2>March 2026</h2><div><button>Previous</button><button>Next</button></div></div>
-                <div class="admin-calendar">
-                    {% for day in days %}
-                        <div class="{{ day == 30 ? 'selected' : '' }}"><strong>{{ day }}</strong>{% if day == 15 %}<span>2 appts</span>{% elseif day == 30 %}<span>1 appt</span>{% endif %}</div>
-                    {% endfor %}
-                </div>
-            </div>
-            <h2>Today's Appointments - March 30, 2026</h2>
+            <h2>Upcoming Appointments</h2>
             <div class="admin-appointment-list">
-                <div><strong>Sarah Johnson - Gel-X Extensions + French</strong><span>2:00 PM</span><em>Deposit paid</em><button>Edit</button><button class="danger">Cancel</button></div>
-                <div><strong>Emma Davis - Manicure</strong><span>4:00 PM</span><em>Pending</em><button>Edit</button><button class="danger">Cancel</button></div>
+                {% for appt in appointments|default([]) %}
+                    <div>
+                        <strong>{{ appt.firstName }} {{ appt.lastName }} — {{ appt.serviceName }}</strong>
+                        <span>{{ appt.date }} {{ appt.time }}</span>
+                        <em>{{ appt.status|capitalize }}</em>
+                        <button>Edit</button><button class="danger">Cancel</button>
+                    </div>
+                {% else %}
+                    <p class="muted">No appointments scheduled.</p>
+                {% endfor %}
             </div>
         {% endif %}
     </section>

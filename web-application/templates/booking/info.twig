@@ -5,11 +5,28 @@
     <h1>Book Your Appointment</h1>
     <p class="subtitle">Step 4 of 6: Your Information</p>
     <div class="booking-grid">
-        <form class="form-panel" action="{{ path('/book/payment') }}" method="get">
-            <label>First Name<input value="Sarah"></label>
-            <label>Last Name<input value="Johnson"></label>
-            <label>Email<input value="sarah@example.com"></label>
-            <label>Phone Number<input value="(555) 123-4567"></label>
+        <form class="form-panel" action="{{ path('/book/info') }}" method="post" novalidate>
+            {% if errors.general is defined %}<p class="error">{{ errors.general }}</p>{% endif %}
+            <label>First Name
+                <input name="firstName" value="{{ form.firstName|default(user.firstName|default('')) }}" required>
+            </label>
+            {% if errors.firstName is defined %}<p class="error">{{ errors.firstName }}</p>{% endif %}
+
+            <label>Last Name
+                <input name="lastName" value="{{ form.lastName|default(user.lastName|default('')) }}" required>
+            </label>
+            {% if errors.lastName is defined %}<p class="error">{{ errors.lastName }}</p>{% endif %}
+
+            <label>Email
+                <input type="email" name="email" value="{{ form.email|default(user.email|default('')) }}" required>
+            </label>
+            {% if errors.email is defined %}<p class="error">{{ errors.email }}</p>{% endif %}
+
+            <label>Phone Number
+                <input name="phoneNumber" value="{{ form.phoneNumber|default(user.phoneNumber|default('')) }}" required>
+            </label>
+            {% if errors.phoneNumber is defined %}<p class="error">{{ errors.phoneNumber }}</p>{% endif %}
+
             <button class="btn">Continue to Payment</button>
         </form>
         {% include 'partials/summary.twig' %}

@@ -6,11 +6,17 @@
     <p class="subtitle">Step 1 of 6: Select Service</p>
     <div class="booking-grid">
         <section class="booking-services">
+            {% if errors.service is defined %}<p class="error">{{ errors.service }}</p>{% endif %}
             {% for service in bookingServices %}
-                <a href="{{ path('/book/date') }}" class="book-card">
-                    <img src="{{ images[service.image] }}" alt="{{ service.name }}">
-                    <h2>{{ service.name }}</h2><span>{{ service.duration }}</span><strong>{{ service.price }}</strong>
-                </a>
+                <form method="post" action="{{ path('/book') }}">
+                    <input type="hidden" name="serviceId" value="{{ service.id }}">
+                    <button type="submit" class="book-card">
+                        <img src="{{ images[service.image]|default(images.brush) }}" alt="{{ service.name }}">
+                        <h2>{{ service.name }}</h2><span>{{ service.duration }}</span><strong>{{ service.price }}</strong>
+                    </button>
+                </form>
+            {% else %}
+                <p class="muted">No services available right now.</p>
             {% endfor %}
         </section>
         {% include 'partials/summary.twig' %}
