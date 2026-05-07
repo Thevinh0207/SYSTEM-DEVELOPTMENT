@@ -204,6 +204,13 @@ class BookingController extends BaseController
             }
         }
 
+        if (!$errors && $date !== '' && $time !== '') {
+            $selectedDateTime = strtotime($date . ' ' . $time);
+            if ($selectedDateTime !== false && $selectedDateTime <= time()) {
+                $errors['time'] = 'Please choose a future time.';
+            }
+        }
+
         if ($errors) {
             $_SESSION['booking_errors']       = $errors;
             $_SESSION['booking_form']['date'] = ['date' => $date, 'time' => $timeRaw];
