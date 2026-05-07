@@ -27,11 +27,21 @@ abstract class BaseController
     protected function render(Response $response, string $template, array $data = []): Response
     {
         $defaults = [
-            'images'      => ViewData::images(),
-            'currentUser' => $_SESSION['user'] ?? null,
+            'images'       => ViewData::images(),
+            'currentUser'  => $_SESSION['user'] ?? null,
+            // One-shot toasts driven by query string flags, e.g. /?logged_out=1
+            'globalToast'  => $this->resolveGlobalToast(),
         ];
         $response->getBody()->write($this->twig->render($template, $data + $defaults));
         return $response->withHeader('Content-Type', 'text/html; charset=utf-8');
+    }
+
+    private function resolveGlobalToast(): ?array
+    {
+        if (isset($_GET['logged_out'])) {
+            return ['type' => 'success', 'message' => 'Successfully logged out.'];
+        }
+        return null;
     }
 
     protected function redirect(string $to): Response

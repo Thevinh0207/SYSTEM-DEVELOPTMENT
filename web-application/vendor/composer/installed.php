@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'app/slim-web-application',
-        'pretty_version' => '1.0.0+no-version-set',
-        'version' => '1.0.0.0',
-        'reference' => null,
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => 'b37aca8d615f2914110e896588b700f25e3d4df2',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -11,9 +11,9 @@
     ),
     'versions' => array(
         'app/slim-web-application' => array(
-            'pretty_version' => '1.0.0+no-version-set',
-            'version' => '1.0.0.0',
-            'reference' => null,
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => 'b37aca8d615f2914110e896588b700f25e3d4df2',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -25,6 +25,15 @@
             'reference' => '9d94dc0154230ac39e5bf89398b324a86f63f765',
             'type' => 'library',
             'install_path' => __DIR__ . '/../fig/http-message-util',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'gabordemooij/redbean' => array(
+            'pretty_version' => 'v5.7',
+            'version' => '5.7.0.0',
+            'reference' => 'e31aad3b38d5c34a809381f9a5283645ce4abb29',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../gabordemooij/redbean',
             'aliases' => array(),
             'dev_requirement' => false,
         ),

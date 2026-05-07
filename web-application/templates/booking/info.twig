@@ -3,8 +3,8 @@
 {% block content %}
 <main class="booking">
     <h1>Book Your Appointment</h1>
-    <p class="subtitle">Step 2 of 6: Your Information</p>
-    <a class="booking-back" href="{{ path('/book') }}">Back to Account</a>
+    <p class="subtitle">Step 2 of 6: Your Information</p>{# only shown to guests #}
+    {% include 'partials/booking-nav.twig' with { back: '/book', backLabel: 'Account' } %}
     <div class="booking-grid">
         <form class="form-panel" action="{{ path('/book/info') }}" method="post" novalidate>
             {% if errors.general is defined %}<p class="error">{{ errors.general }}</p>{% endif %}

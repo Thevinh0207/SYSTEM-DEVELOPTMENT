@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e17803397a857d4f9d5dea700f9a8f3e",
+    "content-hash": "809a2d02914c7270c700c8abddbf2409",
     "packages": [
         {
             "name": "fig/http-message-util",
@@ -61,6 +61,51 @@
                 "source": "https://github.com/php-fig/http-message-util/tree/1.1.5"
             },
             "time": "2020-11-24T22:02:12+00:00"
+        },
+        {
+            "name": "gabordemooij/redbean",
+            "version": "v5.7",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/gabordemooij/redbean.git",
+                "reference": "e31aad3b38d5c34a809381f9a5283645ce4abb29"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/gabordemooij/redbean/zipball/e31aad3b38d5c34a809381f9a5283645ce4abb29",
+                "reference": "e31aad3b38d5c34a809381f9a5283645ce4abb29",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "RedBeanPHP\\": "RedBeanPHP"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Gabor de Mooij",
+                    "email": "gabor@redbeanphp.com",
+                    "homepage": "https://redbeanphp.com"
+                }
+            ],
+            "description": "RedBeanPHP ORM",
+            "homepage": "https://redbeanphp.com/",
+            "keywords": [
+                "orm"
+            ],
+            "support": {
+                "issues": "https://github.com/gabordemooij/redbean/issues",
+                "source": "https://github.com/gabordemooij/redbean/tree/v5.7"
+            },
+            "time": "2021-03-28T11:01:15+00:00"
         },
         {
             "name": "laravel/serializable-closure",

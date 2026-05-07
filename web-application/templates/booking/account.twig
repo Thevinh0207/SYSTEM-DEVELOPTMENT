@@ -3,8 +3,8 @@
 {% block content %}
 <main class="booking">
     <h1>Book Your Appointment</h1>
-    <p class="subtitle">Step 1 of 6: Account</p>
-    <a class="booking-back" href="{{ path('/') }}">Back to Home</a>
+    <p class="subtitle">Step 1 of 6: Account</p>{# only shown to guests #}
+    {% include 'partials/booking-nav.twig' %}
     <div class="booking-grid">
         <section class="choice-list">
             {% set authReturn = summary.serviceId is defined ? '/book/date' : '/book/service' %}

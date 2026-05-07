@@ -338,18 +338,41 @@ nav a {
 }
 
 .subtitle { text-align: center; color: #34455d; margin-bottom: 34px; }
+.booking-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    max-width: 920px;
+    margin: -18px auto 34px;
+}
+.booking-nav .booking-back,
+.booking-nav .booking-home {
+    color: #34455d;
+    font-size: .92rem;
+    font-weight: 800;
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    transition: color .15s, background .15s;
+}
+.booking-nav .booking-back:hover,
+.booking-nav .booking-home:hover {
+    color: var(--pink);
+    background: rgba(214, 51, 108, .08);
+}
+/* If only the Home button is rendered (no Back), push it to the right. */
+.booking-nav .booking-home:only-child { margin-left: auto; }
+.booking-nav .booking-home::before { content: "⌂ "; color: var(--pink); }
+
+/* Legacy single-link style — kept for any non-include usage. */
 .booking-back {
     width: fit-content;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: -18px auto 34px;
     color: #34455d;
     font-size: .92rem;
     font-weight: 800;
     text-decoration: none;
 }
-.booking-back::before { content: "<"; color: var(--pink); }
 .booking-back:hover { color: var(--pink); }
 
 .booking-grid {
@@ -929,6 +952,49 @@ nav a {
 }
 .modal-confirm.btn-danger:hover { background: #b91c1c; border-color: #b91c1c; }
 
+/* ── Global toast (top-right slide-in notifications) ───────────────── */
+.toast {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 240px;
+    max-width: 360px;
+    padding: 14px 18px;
+    background: #fff;
+    color: #1f2937;
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, .18);
+    border-left: 4px solid #10b981;
+    font-weight: 500;
+    transform: translateX(120%);
+    opacity: 0;
+    transition: transform .35s cubic-bezier(.2, .7, .2, 1.2), opacity .35s;
+}
+.toast.toast-show {
+    transform: translateX(0);
+    opacity: 1;
+}
+.toast-icon {
+    background: #10b981;
+    color: #fff;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: .9rem;
+    flex-shrink: 0;
+}
+.toast-message { line-height: 1.4; }
+.toast-error      { border-left-color: #ef4444; }
+.toast-error .toast-icon { background: #ef4444; }
+
 /* ── Admin: service form page ──────────────────────────────────────── */
 .admin-form-page { max-width: 700px; margin: 60px auto; padding: 0 32px; }
 .back-link { color: #6b7280; text-decoration: none; font-size: .9rem; }
@@ -1500,15 +1566,88 @@ input {
 .appointment-card strong { display: block; color: var(--pink); font-size: 25px; }
 .appointment-card span { display: block; color: #00a651; margin-top: 8px; }
 
-.admin-page { background: var(--dark); color: #fff; }
-.admin-layout { min-height: 100vh; display: grid; grid-template-columns: 254px 1fr; }
-.admin-layout aside { padding: 18px 0; background: #232323; border-right: 1px solid #424242; }
-.admin-pill { display: block; margin: 0 20px 28px; padding: 10px 12px; border: 1px solid #ff4a59; border-radius: 8px; color: #ff4a59; font-size: 13px; }
-.admin-layout aside h2 { padding: 0 22px 34px; }
-.admin-layout aside a { display: block; padding: 18px 22px; color: #b7c4d7; text-decoration: none; font-weight: 800; }
-.admin-layout aside a.active { background: var(--pink); color: #fff; }
-.admin-layout section { padding: 28px 32px; }
-.admin-layout h1 { font-size: 36px; margin-top: 0; }
+/* Admin: light theme */
+.admin-page { background: #f9fafb !important; color: #1f2937 !important; }
+
+.admin-layout {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 254px 1fr;
+    background: #f9fafb;
+}
+
+.admin-layout aside {
+    padding: 24px 0;
+    background: #fff;
+    border-right: 1px solid #e5e7eb;
+    box-shadow: 1px 0 4px rgba(0, 0, 0, .03);
+}
+
+.admin-pill {
+    display: block;
+    margin: 0 20px 24px;
+    padding: 8px 12px;
+    border: 1px solid var(--pink);
+    border-radius: 8px;
+    color: var(--pink);
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    text-align: center;
+    background: rgba(214, 51, 108, .06);
+}
+
+.admin-layout aside h2 {
+    padding: 0 22px 18px;
+    color: #111827;
+    font-size: 1.3rem;
+    margin: 0;
+}
+
+.admin-user {
+    padding: 0 22px 24px;
+    margin: 0;
+    font-size: .9rem !important;
+    color: #6b7280 !important;
+    border-bottom: 1px solid #f3f4f6;
+    margin-bottom: 12px !important;
+}
+
+.admin-layout aside a {
+    display: block;
+    padding: 12px 22px;
+    color: #4b5563;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background .15s, color .15s;
+}
+.admin-layout aside a:hover {
+    background: rgba(214, 51, 108, .06);
+    color: var(--pink);
+}
+.admin-layout aside a.active {
+    background: var(--pink);
+    color: #fff;
+}
+
+.admin-layout section {
+    padding: 32px 40px;
+    background: transparent;
+    color: #1f2937;
+}
+.admin-layout h1 {
+    font-size: 2rem;
+    margin-top: 0;
+    color: #111827;
+}
+
+.admin-logout {
+    margin: 24px 20px 0;
+    padding-top: 20px;
+    border-top: 1px solid #f3f4f6;
+}
+.admin-logout button { width: 100%; }
 
 .admin-calendar {
     display: grid;
@@ -1754,11 +1893,13 @@ nav a.active::after {
     float: right;
 }
 
-.admin-panel,
-.admin-table-wrap {
+/* Legacy dark .admin-table-wrap removed — see the light-theme rule earlier
+   in this file. The .admin-panel below keeps a light card style. */
+.admin-panel {
     padding: 24px;
     border-radius: 12px;
-    background: var(--dark-card);
+    background: #fff;
+    border: 1px solid #e5e7eb;
 }
 
 .calendar-head {
@@ -1791,9 +1932,8 @@ nav a.active::after {
     margin-left: 8px;
 }
 
-.admin-table-wrap table {
-    background: transparent;
-}
+.admin-table-wrap table { background: transparent; }
+.admin-table-wrap, .admin-table-wrap * { border-color: #e5e7eb; }
 
 .icon-action {
     min-height: 34px;

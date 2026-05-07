@@ -7,15 +7,14 @@ namespace App\Models;
 use App\Config;
 use App\Database\Database;
 use PDO;
+use RedBeanPHP\R;
 
 /**
- * UserModel — Database operations for the `user` table
- * ======================================================
- * Handles everything related to user accounts: creating them, logging in,
- * fetching them by ID or email, updating profile details, and deletion.
+ * UserModel — handles the `user` table via RedBeanPHP.
  *
- * All methods talk to MySQL through PDO prepared statements, which protect
- * against SQL injection by keeping data separate from the SQL query.
+ * Method signatures and return shapes are identical to the previous PDO-only
+ * version so controllers and templates don't need to change. Internally every
+ * query now flows through RedBean's adapter (R::getRow / R::getCell / R::exec).
  */
 class UserModel
 {
@@ -25,31 +24,27 @@ class UserModel
     public const ROLE_CLIENT = 'client';
     public const ROLE_GUEST  = 'guest';
 
-    private PDO $db;
-
     public function __construct(?PDO $db = null)
     {
-        $this->db = $db ?? Database::connect();
+        // Constructor still accepts a PDO for backwards compatibility, but
+        // calling Database::connect() also boots RedBean if it wasn't already.
+        Database::connect();
     }
 
     public function getAll(): array
     {
-        return $this->db->query('SELECT * FROM ' . self::TABLE . ' ORDER BY userID ASC')->fetchAll();
+        return R::getAll('SELECT * FROM ' . self::TABLE . ' ORDER BY userID ASC');
     }
 
     public function getById(int $id): ?array
     {
-        $stmt = $this->db->prepare('SELECT * FROM ' . self::TABLE . ' WHERE userID = :id');
-        $stmt->execute([':id' => $id]);
-        $row = $stmt->fetch();
+        $row = R::getRow('SELECT * FROM ' . self::TABLE . ' WHERE userID = ?', [$id]);
         return $row ?: null;
     }
 
     public function findUserByEmail(string $email): ?array
     {
-        $stmt = $this->db->prepare('SELECT * FROM ' . self::TABLE . ' WHERE email = :email LIMIT 1');
-        $stmt->execute([':email' => $email]);
-        $row = $stmt->fetch();
+        $row = R::getRow('SELECT * FROM ' . self::TABLE . ' WHERE email = ? LIMIT 1', [$email]);
         return $row ?: null;
     }
 
@@ -69,23 +64,21 @@ class UserModel
 
         $role = $this->isAdminEmail($data['email']) ? self::ROLE_ADMIN : ($data['role'] ?? self::ROLE_CLIENT);
 
-        $stmt = $this->db->prepare(
+        R::exec(
             'INSERT INTO ' . self::TABLE . '
                 (firstName, lastName, email, password, phoneNumber, role)
-             VALUES
-                (:firstName, :lastName, :email, :password, :phoneNumber, :role)'
+             VALUES (?, ?, ?, ?, ?, ?)',
+            [
+                $data['firstName'],
+                $data['lastName'],
+                $data['email'],
+                password_hash($data['password'], PASSWORD_BCRYPT),
+                $data['phoneNumber'] ?? '',
+                $role,
+            ]
         );
 
-        $stmt->execute([
-            ':firstName'   => $data['firstName'],
-            ':lastName'    => $data['lastName'],
-            ':email'       => $data['email'],
-            ':password'    => password_hash($data['password'], PASSWORD_BCRYPT),
-            ':phoneNumber' => $data['phoneNumber'] ?? '',
-            ':role'        => $role,
-        ]);
-
-        return (int) $this->db->lastInsertId();
+        return (int) R::getDatabaseAdapter()->getInsertID();
     }
 
     public function isAdminEmail(string $email): bool
@@ -125,30 +118,30 @@ class UserModel
             return false;
         }
 
-        $stmt = $this->db->prepare(
+        R::exec(
             'UPDATE ' . self::TABLE . '
-             SET firstName = :firstName,
-                 lastName  = :lastName,
-                 email     = :email,
-                 phoneNumber = :phoneNumber,
-                 role      = :role
-             WHERE userID = :id'
+             SET firstName   = ?,
+                 lastName    = ?,
+                 email       = ?,
+                 phoneNumber = ?,
+                 role        = ?
+             WHERE userID = ?',
+            [
+                $data['firstName']   ?? $existing['firstName'],
+                $data['lastName']    ?? $existing['lastName'],
+                $data['email']       ?? $existing['email'],
+                $data['phoneNumber'] ?? $existing['phoneNumber'],
+                $data['role']        ?? $existing['role'],
+                $id,
+            ]
         );
-
-        return $stmt->execute([
-            ':firstName'   => $data['firstName']   ?? $existing['firstName'],
-            ':lastName'    => $data['lastName']    ?? $existing['lastName'],
-            ':email'       => $data['email']       ?? $existing['email'],
-            ':phoneNumber' => $data['phoneNumber'] ?? $existing['phoneNumber'],
-            ':role'        => $data['role']        ?? $existing['role'],
-            ':id'          => $id,
-        ]);
+        return true;
     }
 
     public function delete(int $id): bool
     {
-        $stmt = $this->db->prepare('DELETE FROM ' . self::TABLE . ' WHERE userID = :id');
-        return $stmt->execute([':id' => $id]);
+        R::exec('DELETE FROM ' . self::TABLE . ' WHERE userID = ?', [$id]);
+        return true;
     }
 
     public function validateRegEx(array $data): bool

@@ -7,16 +7,19 @@ namespace App\Database;
 use App\Config;
 use PDO;
 use PDOException;
-
+use RedBeanPHP\R;
 
 /**
- * Database — MySQL Connection Singleton
- * =======================================
- * Creates a single PDO connection to the MySQL database and reuses it for
- * every subsequent call within the same request (Singleton pattern).
+ * Database — MySQL connection + RedBeanPHP bootstrap
+ * ====================================================
+ * Centralised database wiring. We register one connection with RedBeanPHP
+ * (R::setup) and keep a reference to the underlying PDO so model code can
+ * still pull it out if it wants to.
  *
- * Why singleton? Opening a new database connection is slow. By keeping one
- * open for the life of the request, all models share it without the overhead.
+ * Why keep PDO around? — The existing model methods continue to receive a
+ * PDO via their constructors. Underneath, all queries now go through
+ * RedBean's adapter (R::exec / R::getAll / R::getRow / R::dispense /
+ * R::store / R::find), which is what makes this an ORM-backed layer.
  *
  * Connection settings come from config/config.php → 'database' key.
  */
@@ -42,20 +45,24 @@ class Database
 
         $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset={$charset}";
 
-        $options = [
-            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES   => false,
-        ];
-
-        // PHP 8.5+ moved this constant; fall back to the legacy one on older PHP.
-        $initCmd = defined('Pdo\\Mysql::ATTR_INIT_COMMAND')
-            ? \Pdo\Mysql::ATTR_INIT_COMMAND
-            : PDO::MYSQL_ATTR_INIT_COMMAND;
-        $options[$initCmd] = "SET NAMES {$charset}";
-
         try {
-            self::$pdo = new PDO($dsn, $user, $pass, $options);
+            // ── 1. Bootstrap RedBeanPHP ─────────────────────────────────
+            // R::setup creates the ORM adapter + its own PDO under the hood.
+            if (!R::testConnection()) {
+                R::setup($dsn, $user, $pass);
+                // Fluid mode lets RedBean auto-create columns/tables when
+                // dispensing new beans. We never rely on that since the
+                // schema is fixed via db/schema.sql, but leaving it on means
+                // we don't crash on minor mismatches in development.
+                R::freeze(false);
+            }
+
+            // ── 2. Pull the same PDO out so model constructors that still
+            //   accept ?PDO keep working. We tweak attributes for safety.
+            self::$pdo = R::getDatabaseAdapter()->getDatabase()->getPDO();
+            self::$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            self::$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+            self::$pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
         } catch (PDOException $e) {
             throw new PDOException('Database connection failed: ' . $e->getMessage(), (int) $e->getCode());
         }
@@ -66,5 +73,10 @@ class Database
     public static function reset(): void
     {
         self::$pdo = null;
+        try {
+            R::close();
+        } catch (\Throwable $e) {
+            // ignore — adapter may not have been initialised yet
+        }
     }
 }

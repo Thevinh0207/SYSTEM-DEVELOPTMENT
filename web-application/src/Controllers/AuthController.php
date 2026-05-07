@@ -165,7 +165,8 @@ class AuthController extends BaseController
             session_destroy();
         }
 
-        return $this->redirect('/');
+        // Redirect to home with a flag so the toast banner can render once.
+        return $this->redirect('/?logged_out=1');
     }
 
     private function signInUser(array $user): void

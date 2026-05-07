@@ -22,6 +22,10 @@ use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
 use Twig\TwigFunction;
 
+// Hide PHP 8.5 deprecation noise from RedBeanPHP 5.7 (dynamic properties +
+// renamed PDO constant). They don't affect behavior. Real errors still show.
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+
 session_start();
 
 require dirname(__DIR__) . '/vendor/autoload.php';

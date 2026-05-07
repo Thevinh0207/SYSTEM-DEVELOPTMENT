@@ -3,8 +3,12 @@
 {% block content %}
 <main class="booking">
     <h1>Book Your Appointment</h1>
-    <p class="subtitle">Step 5 of 6: Review &amp; Deposit Payment</p>
-    <a class="booking-back" href="{{ path('/book/date') }}">Back to Date &amp; Time</a>
+    {% if currentUser %}
+        <p class="subtitle">Step 3 of 4: Review &amp; Deposit Payment</p>
+    {% else %}
+        <p class="subtitle">Step 5 of 6: Review &amp; Deposit Payment</p>
+    {% endif %}
+    {% include 'partials/booking-nav.twig' with { back: '/book/date', backLabel: 'Date & Time' } %}
     <div class="booking-grid">
         <form class="form-panel" action="{{ path('/book/payment') }}" method="post" novalidate>
             {% if errors.general is defined %}<p class="error">{{ errors.general }}</p>{% endif %}

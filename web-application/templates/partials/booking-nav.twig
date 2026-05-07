@@ -1,0 +1,9 @@
+{# Booking nav: back-step button (optional) + always-visible Home button.
+   Usage: {% include 'partials/booking-nav.twig' with { back: '/book/service', backLabel: 'Services' } %}
+   If `back` is omitted, only the Home button is shown. #}
+<div class="booking-nav">
+    {% if back is defined and back %}
+        <a class="booking-back" href="{{ path(back) }}">← Back{% if backLabel is defined %} to {{ backLabel }}{% endif %}</a>
+    {% endif %}
+    <a class="booking-home" href="{{ path('/') }}">Home</a>
+</div>

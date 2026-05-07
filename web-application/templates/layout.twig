@@ -37,5 +37,28 @@
         </header>
     {% endblock %}
     {% block content %}{% endblock %}
+
+    {% if globalToast %}
+        <div id="global-toast" class="toast toast-{{ globalToast.type|default('success') }}" role="status" aria-live="polite">
+            <span class="toast-icon">✓</span>
+            <span class="toast-message">{{ globalToast.message }}</span>
+        </div>
+        <script>
+            (function () {
+                const t = document.getElementById('global-toast');
+                if (!t) return;
+                // Slide in, hold for 2.4s, fade out, then clean the URL.
+                requestAnimationFrame(() => t.classList.add('toast-show'));
+                setTimeout(() => t.classList.remove('toast-show'), 2400);
+                setTimeout(() => t.remove(), 3000);
+                // Strip the ?logged_out=1 from the URL so refresh doesn't replay it.
+                if (history.replaceState) {
+                    const u = new URL(window.location.href);
+                    u.searchParams.delete('logged_out');
+                    history.replaceState({}, '', u.pathname + (u.search ? u.search : '') + u.hash);
+                }
+            })();
+        </script>
+    {% endif %}
 </body>
 </html>

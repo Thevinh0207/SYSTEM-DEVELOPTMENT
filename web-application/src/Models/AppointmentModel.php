@@ -6,21 +6,18 @@ namespace App\Models;
 
 use App\Database\Database;
 use PDO;
+use RedBeanPHP\R;
 
 /**
- * AppointmentModel — Database operations for the `appointment` table
- * ===================================================================
- * Handles booking, editing, cancelling, and querying appointments.
+ * AppointmentModel — handles the `appointment` table via RedBeanPHP.
  *
- * Key design decisions:
- * - Appointments are never hard-deleted. Cancelling sets status = 'cancelled'.
- * - The isAvailable() check prevents double-booking the same studio time slot.
- * - JOIN queries are used to fetch service name and customer name in one query
- *   rather than making separate calls for each appointment.
+ * Public methods/return shapes unchanged. All SQL routes through R::*.
  *
- * Table columns: AppointmentID, serviceID, userID, date, time, notes, status
+ * Notes:
+ * - Appointments are never hard-deleted; cancellation sets status='cancelled'.
+ * - isAvailable() prevents double-booking the studio time slot.
+ * - JOIN queries fetch service + customer info in one round-trip.
  */
-
 class AppointmentModel
 {
     private const TABLE = 'appointment';
@@ -30,21 +27,14 @@ class AppointmentModel
     public const STATUS_COMPLETED = 'completed';
     public const STATUS_CANCELLED = 'cancelled';
 
-    private PDO $db;
-
     public function __construct(?PDO $db = null)
     {
-        $this->db = $db ?? Database::connect();
+        Database::connect();
     }
 
-    /**
-     * Returns all appointments with the service name and customer name joined in.
-     * Used on the admin appointments dashboard.
-     * Ordered newest first.
-     */
     public function getAllAppointements(): array
     {
-        return $this->db->query(
+        return R::getAll(
             'SELECT a.*,
                     s.name AS serviceName,
                     COALESCE(CONCAT(u.firstName, " ", u.lastName), a.guestName, "Guest") AS customerName,
@@ -55,41 +45,29 @@ class AppointmentModel
              JOIN services s ON a.serviceID = s.ServiceID
              LEFT JOIN user u ON a.userID    = u.userID
              ORDER BY a.date DESC, a.time DESC'
-        )->fetchAll();
+        );
     }
 
-    /**
-     * Returns all appointments for a specific user, with the service name joined.
-     * Used on the customer dashboard "My Appointments" tab.
-     */
     public function getAllAppointmentByUserId(int $userId): array
     {
-        $stmt = $this->db->prepare(
+        return R::getAll(
             'SELECT a.*, s.name AS serviceName
              FROM ' . self::TABLE . ' a
              JOIN services s ON a.serviceID = s.ServiceID
-             WHERE a.userID = :userId
-             ORDER BY a.date DESC, a.time DESC'
+             WHERE a.userID = ?
+             ORDER BY a.date DESC, a.time DESC',
+            [$userId]
         );
-        $stmt->execute([':userId' => $userId]);
-        return $stmt->fetchAll();
     }
 
-    /** Alias for getAllAppointmentByUserId() used in some older code. */
     public function getAppointmentByUserId(int $userId): array
     {
         return $this->getAllAppointmentByUserId($userId);
     }
 
-    /**
-     * Fetches a single appointment by its primary key.
-     * Returns null if not found.
-     */
     public function getById(int $id): ?array
     {
-        $stmt = $this->db->prepare('SELECT * FROM ' . self::TABLE . ' WHERE AppointmentID = :id');
-        $stmt->execute([':id' => $id]);
-        $row = $stmt->fetch();
+        $row = R::getRow('SELECT * FROM ' . self::TABLE . ' WHERE AppointmentID = ?', [$id]);
         return $row ?: null;
     }
 
@@ -108,13 +86,6 @@ class AppointmentModel
         );
     }
 
-    /**
-     * Creates a new appointment after checking availability.
-     * Returns the new AppointmentID, or null if the slot is already taken.
-     *
-     * Required $data keys: serviceID, date, time
-     * Optional $data keys: notes, status
-     */
     public function createAppointment(array $data): ?int
     {
         if (!$this->isAvailable((int) $data['serviceID'], $data['date'], $data['time'])) {
@@ -124,7 +95,6 @@ class AppointmentModel
         $userID = $data['userID'] ?? null;
         $userID = ($userID === null || $userID === '') ? null : (int) $userID;
 
-        // Guests must supply contact info; logged-in users can leave it blank.
         $guestName  = $userID === null ? trim((string) ($data['guestName']  ?? '')) : null;
         $guestEmail = $userID === null ? trim((string) ($data['guestEmail'] ?? '')) : null;
         $guestPhone = $userID === null ? trim((string) ($data['guestPhone'] ?? '')) : null;
@@ -133,26 +103,24 @@ class AppointmentModel
             return null;
         }
 
-        $stmt = $this->db->prepare(
+        R::exec(
             'INSERT INTO ' . self::TABLE . '
                 (serviceID, userID, guestName, guestEmail, guestPhone, date, time, notes, status)
-             VALUES
-                (:serviceID, :userID, :guestName, :guestEmail, :guestPhone, :date, :time, :notes, :status)'
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [
+                (int) $data['serviceID'],
+                $userID,
+                ($guestName  !== null && $guestName  !== '') ? $guestName  : null,
+                ($guestEmail !== null && $guestEmail !== '') ? $guestEmail : null,
+                ($guestPhone !== null && $guestPhone !== '') ? $guestPhone : null,
+                $data['date'],
+                $data['time'],
+                $data['notes'] ?? null,
+                $data['status'] ?? self::STATUS_PENDING,
+            ]
         );
 
-        $stmt->execute([
-            ':serviceID'  => (int) $data['serviceID'],
-            ':userID'     => $userID,
-            ':guestName'  => $guestName  !== null && $guestName  !== '' ? $guestName  : null,
-            ':guestEmail' => $guestEmail !== null && $guestEmail !== '' ? $guestEmail : null,
-            ':guestPhone' => $guestPhone !== null && $guestPhone !== '' ? $guestPhone : null,
-            ':date'       => $data['date'],
-            ':time'       => $data['time'],
-            ':notes'      => $data['notes'] ?? null,
-            ':status'     => $data['status'] ?? self::STATUS_PENDING,
-        ]);
-
-        return (int) $this->db->lastInsertId();
+        return (int) R::getDatabaseAdapter()->getInsertID();
     }
 
     public function editAppointment(int $id, array $data): bool
@@ -160,10 +128,6 @@ class AppointmentModel
         return $this->updateAppointment($id, $data);
     }
 
-    /**
-     * Updates an appointment's details. Any field not in $data keeps its
-     * current value (safe partial update).
-     */
     public function updateAppointment(int $id, array $data): bool
     {
         $existing = $this->getById($id);
@@ -172,8 +136,8 @@ class AppointmentModel
         }
 
         $serviceId = (int) ($data['serviceID'] ?? $existing['serviceID']);
-        $date = (string) ($data['date'] ?? $existing['date']);
-        $time = (string) ($data['time'] ?? $existing['time']);
+        $date      = (string) ($data['date'] ?? $existing['date']);
+        $time      = (string) ($data['time'] ?? $existing['time']);
         $slotChanged = $serviceId !== (int) $existing['serviceID']
             || $date !== (string) $existing['date']
             || $time !== (string) $existing['time'];
@@ -182,78 +146,62 @@ class AppointmentModel
             return false;
         }
 
-        $stmt = $this->db->prepare(
+        R::exec(
             'UPDATE ' . self::TABLE . '
-             SET serviceID = :serviceID,
-                 date      = :date,
-                 time      = :time,
-                 notes     = :notes,
-                 status    = :status
-             WHERE AppointmentID = :id'
+             SET serviceID = ?,
+                 date      = ?,
+                 time      = ?,
+                 notes     = ?,
+                 status    = ?
+             WHERE AppointmentID = ?',
+            [
+                $serviceId,
+                $date,
+                $time,
+                $data['notes']  ?? $existing['notes'],
+                $data['status'] ?? $existing['status'],
+                $id,
+            ]
         );
-
-        return $stmt->execute([
-            ':serviceID' => $serviceId,
-            ':date'      => $date,
-            ':time'      => $time,
-            ':notes'     => $data['notes']  ?? $existing['notes'],
-            ':status'    => $data['status'] ?? $existing['status'],
-            ':id'        => $id,
-        ]);
+        return true;
     }
 
-    /**
-     * Marks an appointment as cancelled.
-     */
     public function cancelAppointment(int $id): bool
     {
-        $stmt = $this->db->prepare(
-            'UPDATE ' . self::TABLE . ' SET status = :status WHERE AppointmentID = :id'
+        R::exec(
+            'UPDATE ' . self::TABLE . ' SET status = ? WHERE AppointmentID = ?',
+            [self::STATUS_CANCELLED, $id]
         );
-        return $stmt->execute([
-            ':status' => self::STATUS_CANCELLED,
-            ':id'     => $id,
-        ]);
+        return true;
     }
 
-    /**
-     * Checks whether the studio has no non-cancelled appointment at that date and time.
-     * The serviceId parameter is kept for older callers, but availability is studio-wide.
-     */
     public function isAvailable(int $serviceId, string $date, string $time, ?int $ignoreAppointmentId = null): bool
     {
-        $ignoreSql = $ignoreAppointmentId === null ? '' : ' AND AppointmentID != :ignoreAppointmentId';
-        $stmt = $this->db->prepare(
-            'SELECT COUNT(*) FROM ' . self::TABLE . '
-             WHERE date = :date
-               AND time = :time
-               AND status != :cancelled' . $ignoreSql
-        );
-        $params = [
-            ':date'      => $date,
-            ':time'      => $time,
-            ':cancelled' => self::STATUS_CANCELLED,
-        ];
-        if ($ignoreAppointmentId !== null) {
-            $params[':ignoreAppointmentId'] = $ignoreAppointmentId;
+        if ($ignoreAppointmentId === null) {
+            $count = (int) R::getCell(
+                'SELECT COUNT(*) FROM ' . self::TABLE . '
+                 WHERE date = ? AND time = ? AND status != ?',
+                [$date, $time, self::STATUS_CANCELLED]
+            );
+        } else {
+            $count = (int) R::getCell(
+                'SELECT COUNT(*) FROM ' . self::TABLE . '
+                 WHERE date = ? AND time = ? AND status != ? AND AppointmentID != ?',
+                [$date, $time, self::STATUS_CANCELLED, $ignoreAppointmentId]
+            );
         }
-        $stmt->execute($params);
-        return (int) $stmt->fetchColumn() === 0;
+        return $count === 0;
     }
 
     public function getBookedTimesByDate(string $date): array
     {
-        $stmt = $this->db->prepare(
+        $rows = R::getAll(
             'SELECT TIME_FORMAT(time, "%H:%i") AS time
              FROM ' . self::TABLE . '
-             WHERE date = :date
-               AND status != :cancelled
-             ORDER BY time ASC'
+             WHERE date = ? AND status != ?
+             ORDER BY time ASC',
+            [$date, self::STATUS_CANCELLED]
         );
-        $stmt->execute([
-            ':date' => $date,
-            ':cancelled' => self::STATUS_CANCELLED,
-        ]);
-        return array_column($stmt->fetchAll(), 'time');
+        return array_column($rows, 'time');
     }
 }

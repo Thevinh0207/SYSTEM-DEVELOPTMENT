@@ -3,8 +3,17 @@
 {% block content %}
 <main class="booking">
     <h1>Book Your Appointment</h1>
-    <p class="subtitle">Step 3 of 6: Select Service</p>
-    <a class="booking-back" href="{{ currentUser ? path('/dashboard') : path('/book/info') }}">Back to {{ currentUser ? 'Account Info' : 'Information' }}</a>
+    {% if currentUser %}
+        <p class="subtitle">Step 1 of 4: Select Service</p>
+    {% else %}
+        <p class="subtitle">Step 3 of 6: Select Service</p>
+    {% endif %}
+    {% if currentUser %}
+        {# Logged-in users started here — only the Home button makes sense. #}
+        {% include 'partials/booking-nav.twig' %}
+    {% else %}
+        {% include 'partials/booking-nav.twig' with { back: '/book/info', backLabel: 'Information' } %}
+    {% endif %}
     <div class="booking-grid">
         <section class="booking-services">
             {% if errors.service is defined %}<p class="error">{{ errors.service }}</p>{% endif %}

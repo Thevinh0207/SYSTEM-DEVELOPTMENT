@@ -6,43 +6,43 @@ namespace App\Models;
 
 use App\Database\Database;
 use PDO;
+use RedBeanPHP\R;
 
+/**
+ * ServiceModel — handles the `services` table via RedBeanPHP.
+ *
+ * Public method signatures unchanged. Underneath, queries flow through
+ * R::getAll / R::getRow / R::exec.
+ */
 class ServiceModel
 {
     private const TABLE = 'services';
 
-    private PDO $db;
-
     public function __construct(?PDO $db = null)
     {
-        $this->db = $db ?? Database::connect();
+        Database::connect();
     }
 
     public function getAllServices(): array
     {
-        return $this->db->query(
-            'SELECT * FROM ' . self::TABLE . ' ORDER BY category ASC, name ASC'
-        )->fetchAll();
+        return R::getAll('SELECT * FROM ' . self::TABLE . ' ORDER BY category ASC, name ASC');
     }
 
     public function getAllServicesByUserId(int $userId): array
     {
-        $stmt = $this->db->prepare(
+        return R::getAll(
             'SELECT DISTINCT s.*
              FROM ' . self::TABLE . ' s
              JOIN appointment a ON a.serviceID = s.ServiceID
-             WHERE a.userID = :userId
-             ORDER BY s.name ASC'
+             WHERE a.userID = ?
+             ORDER BY s.name ASC',
+            [$userId]
         );
-        $stmt->execute([':userId' => $userId]);
-        return $stmt->fetchAll();
     }
 
     public function getById(int $id): ?array
     {
-        $stmt = $this->db->prepare('SELECT * FROM ' . self::TABLE . ' WHERE ServiceID = :id');
-        $stmt->execute([':id' => $id]);
-        $row = $stmt->fetch();
+        $row = R::getRow('SELECT * FROM ' . self::TABLE . ' WHERE ServiceID = ?', [$id]);
         return $row ?: null;
     }
 
@@ -64,22 +64,20 @@ class ServiceModel
 
     public function create(array $data): ?int
     {
-        $stmt = $this->db->prepare(
+        R::exec(
             'INSERT INTO ' . self::TABLE . '
                 (name, category, description, price, duration)
-             VALUES
-                (:name, :category, :description, :price, :duration)'
+             VALUES (?, ?, ?, ?, ?)',
+            [
+                $data['name'],
+                $data['category'],
+                $data['description'] ?? '',
+                (float) $data['price'],
+                (int) $data['duration'],
+            ]
         );
-
-        $ok = $stmt->execute([
-            ':name'        => $data['name'],
-            ':category'    => $data['category'],
-            ':description' => $data['description'] ?? '',
-            ':price'       => (float) $data['price'],
-            ':duration'    => (int) $data['duration'],
-        ]);
-
-        return $ok ? (int) $this->db->lastInsertId() : null;
+        $id = (int) R::getDatabaseAdapter()->getInsertID();
+        return $id ?: null;
     }
 
     public function update(int $id, array $data): bool
@@ -89,24 +87,24 @@ class ServiceModel
             return false;
         }
 
-        $stmt = $this->db->prepare(
+        R::exec(
             'UPDATE ' . self::TABLE . '
-             SET name        = :name,
-                 category    = :category,
-                 description = :description,
-                 price       = :price,
-                 duration    = :duration
-             WHERE ServiceID = :id'
+             SET name        = ?,
+                 category    = ?,
+                 description = ?,
+                 price       = ?,
+                 duration    = ?
+             WHERE ServiceID = ?',
+            [
+                $data['name']        ?? $existing['name'],
+                $data['category']    ?? $existing['category'],
+                $data['description'] ?? $existing['description'],
+                (float) ($data['price']    ?? $existing['price']),
+                (int)   ($data['duration'] ?? $existing['duration']),
+                $id,
+            ]
         );
-
-        return $stmt->execute([
-            ':name'        => $data['name']        ?? $existing['name'],
-            ':category'    => $data['category']    ?? $existing['category'],
-            ':description' => $data['description'] ?? $existing['description'],
-            ':price'       => (float) ($data['price']    ?? $existing['price']),
-            ':duration'    => (int)   ($data['duration'] ?? $existing['duration']),
-            ':id'          => $id,
-        ]);
+        return true;
     }
 
     public function editServices(int $id, array $data): bool
@@ -114,15 +112,10 @@ class ServiceModel
         return $this->update($id, $data);
     }
 
-    /**
-     * Permanently deletes a service.
-     * Note: the schema has ON DELETE RESTRICT on the appointment foreign key,
-     * so this will fail if any appointments reference this service.
-     */
     public function delete(int $id): bool
     {
-        $stmt = $this->db->prepare('DELETE FROM ' . self::TABLE . ' WHERE ServiceID = :id');
-        return $stmt->execute([':id' => $id]);
+        R::exec('DELETE FROM ' . self::TABLE . ' WHERE ServiceID = ?', [$id]);
+        return true;
     }
 
     public function deleteServices(int $id): bool

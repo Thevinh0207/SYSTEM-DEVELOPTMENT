@@ -3,8 +3,12 @@
 {% block content %}
 <main class="booking">
     <h1>Book Your Appointment</h1>
-    <p class="subtitle">Step 4 of 6: Select Date &amp; Time</p>
-    <a class="booking-back" href="{{ path('/book/service') }}">Back to Services</a>
+    {% if currentUser %}
+        <p class="subtitle">Step 2 of 4: Select Date &amp; Time</p>
+    {% else %}
+        <p class="subtitle">Step 4 of 6: Select Date &amp; Time</p>
+    {% endif %}
+    {% include 'partials/booking-nav.twig' with { back: '/book/service', backLabel: 'Services' } %}
     <div class="booking-grid">
         <section class="date-time">
             <form method="post" action="{{ path('/book/date') }}" novalidate>
