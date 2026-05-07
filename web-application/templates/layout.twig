@@ -13,7 +13,7 @@
             <nav>
                 <a class="{{ active == 'home' ? 'active' : '' }}" href="{{ path('/') }}">Home</a>
                 <a class="{{ active == 'services' ? 'active' : '' }}" href="{{ path('/services') }}">Services</a>
-                <a class="{{ active == 'book' ? 'active' : '' }}" href="{{ path('/book') }}">Book</a>
+                <a class="{{ active == 'book' ? 'active' : '' }}" href="{{ path('/book?new=1') }}">Book</a>
                 <a class="{{ active == 'about' ? 'active' : '' }}" href="{{ path('/about') }}">About</a>
                 <a class="{{ active == 'faq' ? 'active' : '' }}" href="{{ path('/faq') }}">FAQ</a>
                 {% if currentUser %}

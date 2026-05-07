@@ -29,10 +29,11 @@ class AuthController extends BaseController
 
     public function showLogin(Request $r, Response $response): Response
     {
+        $returnTo = $this->captureReturnTo($r);
         $errors = $_SESSION['auth_errors'] ?? [];
         $form   = $_SESSION['auth_form']   ?? [];
         unset($_SESSION['auth_errors'], $_SESSION['auth_form']);
-        return $this->render($response, 'auth/login.twig', ['errors' => $errors, 'form' => $form]);
+        return $this->render($response, 'auth/login.twig', ['errors' => $errors, 'form' => $form, 'returnTo' => $returnTo]);
     }
 
     public function login(Request $r, Response $response): Response
@@ -61,15 +62,20 @@ class AuthController extends BaseController
         }
 
         $this->signInUser($user);
+        $returnTo = $this->consumeReturnTo();
+        if ($returnTo !== null && $user['role'] !== UserModel::ROLE_ADMIN) {
+            return $this->redirect($returnTo);
+        }
         return $this->redirect($user['role'] === UserModel::ROLE_ADMIN ? '/admin' : '/dashboard');
     }
 
     public function showRegister(Request $r, Response $response): Response
     {
+        $returnTo = $this->captureReturnTo($r);
         $errors = $_SESSION['auth_errors'] ?? [];
         $form   = $_SESSION['auth_form']   ?? [];
         unset($_SESSION['auth_errors'], $_SESSION['auth_form']);
-        return $this->render($response, 'auth/register.twig', ['errors' => $errors, 'form' => $form]);
+        return $this->render($response, 'auth/register.twig', ['errors' => $errors, 'form' => $form, 'returnTo' => $returnTo]);
     }
 
     public function register(Request $r, Response $response): Response
@@ -132,6 +138,10 @@ class AuthController extends BaseController
 
         $created = $this->users->getById($userId);
         $this->signInUser($created);
+        $returnTo = $this->consumeReturnTo();
+        if ($returnTo !== null && $created['role'] !== UserModel::ROLE_ADMIN) {
+            return $this->redirect($returnTo);
+        }
         return $this->redirect($created['role'] === UserModel::ROLE_ADMIN ? '/admin' : '/dashboard');
     }
 
@@ -169,5 +179,33 @@ class AuthController extends BaseController
             'phoneNumber' => $user['phoneNumber'],
             'role'        => $user['role'],
         ];
+        $_SESSION['user_id'] = $_SESSION['user']['id'];
+        $_SESSION['user_role'] = $_SESSION['user']['role'];
+    }
+
+    private function captureReturnTo(Request $r): ?string
+    {
+        $returnTo = (string) ($r->getQueryParams()['return'] ?? ($_SESSION['auth_return'] ?? ''));
+        if (!$this->isSafeReturnTo($returnTo)) {
+            unset($_SESSION['auth_return']);
+            return null;
+        }
+
+        $_SESSION['auth_return'] = $returnTo;
+        return $returnTo;
+    }
+
+    private function consumeReturnTo(): ?string
+    {
+        $returnTo = $_SESSION['auth_return'] ?? null;
+        unset($_SESSION['auth_return']);
+        return is_string($returnTo) && $this->isSafeReturnTo($returnTo) ? $returnTo : null;
+    }
+
+    private function isSafeReturnTo(string $returnTo): bool
+    {
+        return str_starts_with($returnTo, '/book/')
+            && !str_contains($returnTo, '//')
+            && !str_contains($returnTo, '\\');
     }
 }

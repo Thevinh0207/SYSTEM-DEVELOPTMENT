@@ -4,6 +4,7 @@
 <main class="confirmed">
     <div class="check">✓</div>
     <h1>Appointment Confirmed!</h1>
+    <p class="subtitle">Step 6 of 6: Confirmation</p>
     {% if booking.email is defined and booking.email %}
         <p>We have sent a confirmation email to {{ booking.email }}</p>
     {% endif %}

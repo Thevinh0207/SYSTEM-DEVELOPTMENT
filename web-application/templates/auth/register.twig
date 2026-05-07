@@ -54,7 +54,7 @@
         </label>
 
         <button class="btn wide" type="submit">Create Account</button>
-        <a href="{{ path('/login') }}">Already have an account?</a>
+        <a href="{{ path(returnTo is defined and returnTo ? '/login?return=' ~ returnTo : '/login') }}">Already have an account?</a>
     </form>
 </main>
 {% endblock %}

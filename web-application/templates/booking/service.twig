@@ -3,7 +3,8 @@
 {% block content %}
 <main class="booking">
     <h1>Book Your Appointment</h1>
-    <p class="subtitle">Step 1 of 6: Select Service</p>
+    <p class="subtitle">Step 3 of 6: Select Service</p>
+    <a class="booking-back" href="{{ currentUser ? path('/dashboard') : path('/book/info') }}">Back to {{ currentUser ? 'Account Info' : 'Information' }}</a>
     <div class="booking-grid">
         <section class="booking-services">
             {% if errors.service is defined %}<p class="error">{{ errors.service }}</p>{% endif %}

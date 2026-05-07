@@ -11,8 +11,8 @@
         <label>Email<input type="email" name="email" value="{{ form.email|default('') }}" required placeholder="you@example.com"></label>
         <label>Password<input type="password" name="password" required placeholder="Password"></label>
         <button class="btn wide">Log In</button>
-        <a class="outline-btn" href="{{ path('/register') }}">Create Account</a>
-        <a href="{{ path('/book/info') }}">Continue as Guest</a>
+        <a class="outline-btn" href="{{ path(returnTo is defined and returnTo ? '/register?return=' ~ returnTo : '/register') }}">Create Account</a>
+        <a href="{{ path(returnTo is defined and returnTo ? '/book/info' : '/') }}">Continue as Guest</a>
     </form>
 </main>
 {% endblock %}

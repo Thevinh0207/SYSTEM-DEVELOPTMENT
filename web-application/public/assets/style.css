@@ -235,7 +235,10 @@ nav a {
     align-items: center;
     border-bottom: 1px solid var(--line);
     padding: 16px 0;
+    color: inherit;
+    text-decoration: none;
 }
+.menu-row:hover strong { color: var(--pink); }
 .menu-row-main p.muted { margin: 4px 0 0; font-size: .9rem; line-height: 1.4; }
 
 .time { color: #34455d; }
@@ -272,6 +275,16 @@ nav a {
 .detail-grid p { color: #3f4b5f; line-height: 1.65; }
 .detail-grid .meta span { color: var(--pink); font-size: 24px; margin-right: 20px; }
 .detail-grid img { width: 100%; border-radius: 12px; box-shadow: 0 10px 24px rgba(0,0,0,.12); }
+.service-reviews { margin-top: 36px; }
+.service-reviews h2 { font-size: 24px; margin-bottom: 16px; }
+.service-review {
+    margin: 12px 0;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+.service-review span { float: right; color: var(--pink); font-weight: 700; }
+.service-review p { margin: 10px 0 0; }
 
 .option {
     min-height: 60px;
@@ -325,6 +338,19 @@ nav a {
 }
 
 .subtitle { text-align: center; color: #34455d; margin-bottom: 34px; }
+.booking-back {
+    width: fit-content;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: -18px auto 34px;
+    color: #34455d;
+    font-size: .92rem;
+    font-weight: 800;
+    text-decoration: none;
+}
+.booking-back::before { content: "<"; color: var(--pink); }
+.booking-back:hover { color: var(--pink); }
 
 .booking-grid {
     display: grid;
@@ -1057,9 +1083,41 @@ nav a {
     font-size: 1.15rem;
     color: #111827;
 }
+.profile-label {
+    margin: 0 0 14px;
+    color: var(--pink);
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
 .profile-card .muted { color: #6b7280; margin: 2px 0; font-size: .9rem; }
 .profile-card .small { font-size: .8rem; line-height: 1.5; text-align: left; }
 .profile-card hr { border: 0; border-top: 1px solid #f3f3f3; margin: 18px 0; }
+
+.account-info {
+    margin: 18px 0 0;
+    text-align: left;
+}
+.account-info div {
+    display: grid;
+    grid-template-columns: 88px 1fr;
+    gap: 12px;
+    padding: 9px 0;
+    border-top: 1px solid #f3f3f3;
+}
+.account-info dt {
+    color: #6b7280;
+    font-size: .78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+.account-info dd {
+    margin: 0;
+    color: #111827;
+    font-size: .9rem;
+    overflow-wrap: anywhere;
+}
 
 .profile-stats {
     display: grid;
