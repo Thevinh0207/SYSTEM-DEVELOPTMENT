@@ -1,0 +1,41 @@
+{# Site-wide footer. Included from layout.twig on every public page.
+   Excluded from admin pages by checking body_class — admin templates declare
+   `body_class = 'admin-page'` and we skip the include there. #}
+<footer class="site-footer">
+    <div class="site-footer-inner">
+        <div class="site-footer-brand">
+            <strong><span aria-hidden="true">&hearts;</span> Studio Doki</strong>
+            <p class="muted">Premium nail care, one client at a time.</p>
+        </div>
+
+        <div class="site-footer-col">
+            <h4>Visit</h4>
+            <p>123 Main Street<br>City, State 12345</p>
+        </div>
+
+        <div class="site-footer-col">
+            <h4>Contact</h4>
+            <p><a href="mailto:hello@studiodoki.com">hello@studiodoki.com</a><br>
+               <a href="tel:5551234567">(555) 123-4567</a></p>
+        </div>
+
+        <div class="site-footer-col">
+            <h4>Explore</h4>
+            <ul>
+                <li><a href="{{ path('/services') }}">Services</a></li>
+                <li><a href="{{ path('/about') }}">About</a></li>
+                <li><a href="{{ path('/faq') }}">FAQ</a></li>
+                <li><a href="{{ path('/book?new=1') }}">Book</a></li>
+            </ul>
+        </div>
+
+        <div class="site-footer-col">
+            <h4>Follow</h4>
+            <p><span class="muted">@studiodoki</span></p>
+        </div>
+    </div>
+
+    <div class="site-footer-bottom">
+        <span>© {{ "now"|date('Y') }} Studio Doki. All rights reserved.</span>
+    </div>
+</footer>

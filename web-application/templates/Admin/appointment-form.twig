@@ -40,8 +40,8 @@
             <select name="serviceID" required>
                 <option value="">— Select a service —</option>
                 {% for s in services %}
-                    <option value="{{ s.ServiceID }}"
-                            {{ appointment.serviceID == s.ServiceID ? 'selected' : '' }}>
+                    <option value="{{ s.id }}"
+                            {{ appointment.serviceID == s.id ? 'selected' : '' }}>
                         {{ s.name }} — ${{ s.price|number_format(2) }} · {{ s.duration }} min
                     </option>
                 {% endfor %}

@@ -13,17 +13,6 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Throwable;
 use Twig\Environment;
 
-/**
- * Booking flow per the project flowchart:
- *   /book               → gate (logged-in skip; guests see choices)
- *   /book/info          → guest contact info
- *   /book/service       → pick service
- *   /book/date          → pick date+time. Saves appointment to DB on submit.
- *   /book/payment       → deposit. Saves payment row, marks appointment confirmed.
- *   /book/confirmed     → overview + return-to-home link.
- *
- * Booking state lives in $_SESSION['booking'] and is wiped on the final step.
- */
 class BookingController extends BaseController
 {
     public function __construct(
@@ -204,20 +193,12 @@ class BookingController extends BaseController
             }
         }
 
-        if (!$errors && $date !== '' && $time !== '') {
-            $selectedDateTime = strtotime($date . ' ' . $time);
-            if ($selectedDateTime !== false && $selectedDateTime <= time()) {
-                $errors['time'] = 'Please choose a future time.';
-            }
-        }
-
         if ($errors) {
             $_SESSION['booking_errors']       = $errors;
             $_SESSION['booking_form']['date'] = ['date' => $date, 'time' => $timeRaw];
             return $this->redirect('/book/date');
         }
 
-        // Snapshot contact info from session user (logged-in) or guest form.
         $userId  = $_SESSION['user']['id'] ?? null;
         $contact = $userId
             ? [
@@ -229,7 +210,7 @@ class BookingController extends BaseController
             : $booking['contact'];
 
         try {
-            $appointmentId = $this->appointments->createAppointment([
+            $appt = $this->appointments->create([
                 'serviceID'  => (int) $booking['serviceId'],
                 'userID'     => $userId,
                 'guestName'  => $userId ? null : trim($contact['firstName'] . ' ' . $contact['lastName']),
@@ -245,13 +226,13 @@ class BookingController extends BaseController
             return $this->redirect('/book/date');
         }
 
-        if (!$appointmentId) {
+        if (!$appt) {
             $_SESSION['booking_errors']['time'] = 'That time slot is no longer available. Please pick another time.';
             $_SESSION['booking_form']['date']   = ['date' => $date, 'time' => $timeRaw];
             return $this->redirect('/book/date');
         }
 
-        $_SESSION['booking']['id']         = $appointmentId;
+        $_SESSION['booking']['id']         = (int) $appt->id;
         $_SESSION['booking']['date']       = $date;
         $_SESSION['booking']['time']       = $timeRaw;
         $_SESSION['booking']['timeStored'] = $time;
@@ -327,7 +308,11 @@ class BookingController extends BaseController
                 'paymentAmount'    => 20.00,
                 'paymentStatus'    => 'paid',
             ]);
-            $this->appointments->updateAppointment((int) $booking['id'], ['status' => 'confirmed']);
+            $appt = $this->appointments->load((int) $booking['id']);
+            if ($appt) {
+                $appt->status = AppointmentModel::STATUS_CONFIRMED;
+                $this->appointments->save($appt);
+            }
         } catch (Throwable $e) {
             // Non-fatal — appointment is already saved.
         }
@@ -359,41 +344,43 @@ class BookingController extends BaseController
         return $this->render($response, 'booking/confirmed.twig', $view);
     }
 
-    /** Maps DB rows into the shape the picker template expects. */
+    /** Loads service rows in the shape the picker template expects. */
     private function loadServices(): array
     {
         try {
-            $services = $this->services->getAllServices();
+            $beans = $this->services->findAll();
         } catch (Throwable $e) {
-            $services = [];
+            $beans = [];
         }
-        return array_map(static fn(array $s): array => [
-            'id'       => (int) $s['ServiceID'],
-            'name'     => $s['name'],
-            'duration' => $s['duration'] . ' min',
-            'price'    => '$' . number_format((float) $s['price'], 2),
-            'priceNum' => (float) $s['price'],
-            'image'    => 'brush',
-        ], $services);
+        $rows = [];
+        foreach ($beans as $s) {
+            $rows[] = [
+                'id'       => (int) $s->id,
+                'name'     => $s->name,
+                'duration' => $s->duration . ' min',
+                'price'    => '$' . number_format((float) $s->price, 2),
+                'priceNum' => (float) $s->price,
+                'image'    => 'brush',
+            ];
+        }
+        return $rows;
     }
 
+    /** Stash the chosen service in the booking session. Returns true if found. */
     private function selectService(int $serviceId): bool
     {
         try {
-            $service = $this->services->getById($serviceId);
+            $svc = $this->services->load($serviceId);
         } catch (Throwable $e) {
-            $service = null;
-        }
-
-        if (!$service) {
             return false;
         }
+        if (!$svc) return false;
 
-        $_SESSION['booking']['serviceId'] = (int) $service['ServiceID'];
-        $_SESSION['booking']['service']   = $service['name'];
-        $_SESSION['booking']['duration']  = $service['duration'] . ' min';
-        $_SESSION['booking']['price']     = '$' . number_format((float) $service['price'], 2);
-        $_SESSION['booking']['priceNum']  = (float) $service['price'];
+        $_SESSION['booking']['serviceId'] = (int) $svc->id;
+        $_SESSION['booking']['service']   = $svc->name;
+        $_SESSION['booking']['duration']  = $svc->duration . ' min';
+        $_SESSION['booking']['price']     = '$' . number_format((float) $svc->price, 2);
+        $_SESSION['booking']['priceNum']  = (float) $svc->price;
         return true;
     }
 }

@@ -16,7 +16,7 @@ declare(strict_types=1);
 require __DIR__ . '/../vendor/autoload.php';
 
 use App\Config;
-use App\Database\Database;
+use RedBeanPHP\R;
 
 $cfg = Config::get('database', []);
 
@@ -76,10 +76,16 @@ if (!$exists) {
     echo "      ✓ Database exists.\n\n";
 }
 
-// ── 3. Connect via App\Database\Database (selects the dbname) ───────────
+// ── 3. Bootstrap RedBeanPHP using R::setup ──────────────────────────────
 echo "[3/4] Connecting via App\\Database\\Database...\n";
 try {
-    $pdo = Database::connect();
+    R::setup(
+        "mysql:host={$cfg['host']};port={$cfg['port']};dbname={$cfg['dbname']};charset=" . ($cfg['charset'] ?? 'utf8mb4'),
+        $cfg['user'],
+        $cfg['pass']
+    );
+    R::freeze(false);
+    $pdo = R::getDatabaseAdapter()->getDatabase()->getPDO();
     echo "      ✓ App connection OK.\n\n";
 } catch (Throwable $e) {
     echo "      ✗ App connection failed: " . $e->getMessage() . "\n";

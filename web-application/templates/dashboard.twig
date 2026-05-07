@@ -128,8 +128,8 @@
                                     </header>
 
                                     {% if appt.status == 'completed' %}
-                                        {% if reviewedIds[appt.AppointmentID] is defined %}
-                                            {% set myReview = reviewedIds[appt.AppointmentID] %}
+                                        {% if reviewedIds[appt.id] is defined %}
+                                            {% set myReview = reviewedIds[appt.id] %}
                                             <div class="my-review-inline">
                                                 <header>
                                                     <span class="check">✓</span>
@@ -153,21 +153,21 @@
                                                 <form method="post" action="{{ path('/dashboard/review') }}" class="review-form"
                                                       data-confirm="Post this review? It will be visible to the studio."
                                                       data-confirm-title="Post review">
-                                                    <input type="hidden" name="appointmentID" value="{{ appt.AppointmentID }}">
+                                                    <input type="hidden" name="appointmentID" value="{{ appt.id }}">
 
                                                     <fieldset class="rating-input">
                                                         <legend>Your rating</legend>
                                                         {% for n in [5, 4, 3, 2, 1] %}
-                                                            <input type="radio" id="r-{{ appt.AppointmentID }}-{{ n }}" name="rating" value="{{ n }}"
-                                                                   {{ (reviewForm.appointmentID|default(0) == appt.AppointmentID and reviewForm.rating == n) ? 'checked' : '' }}
+                                                            <input type="radio" id="r-{{ appt.id }}-{{ n }}" name="rating" value="{{ n }}"
+                                                                   {{ (reviewForm.appointmentID|default(0) == appt.id and reviewForm.rating == n) ? 'checked' : '' }}
                                                                    required>
-                                                            <label for="r-{{ appt.AppointmentID }}-{{ n }}" title="{{ n }} star{{ n > 1 ? 's' : '' }}">★</label>
+                                                            <label for="r-{{ appt.id }}-{{ n }}" title="{{ n }} star{{ n > 1 ? 's' : '' }}">★</label>
                                                         {% endfor %}
                                                     </fieldset>
                                                     {% if reviewErrors.rating is defined %}<p class="error">{{ reviewErrors.rating }}</p>{% endif %}
 
                                                     <textarea name="comment" rows="3" maxlength="255"
-                                                              placeholder="How was your experience?">{{ reviewForm.appointmentID|default(0) == appt.AppointmentID ? reviewForm.comment|default('') : '' }}</textarea>
+                                                              placeholder="How was your experience?">{{ reviewForm.appointmentID|default(0) == appt.id ? reviewForm.comment|default('') : '' }}</textarea>
                                                     {% if reviewErrors.comment is defined %}<p class="error">{{ reviewErrors.comment }}</p>{% endif %}
 
                                                     <button type="submit" class="btn-sm">Post review</button>

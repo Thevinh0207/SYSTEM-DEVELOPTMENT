@@ -187,7 +187,6 @@ class ComposerStaticInita039d812a53e635d4002fe8297b23072
         'App\\Controllers\\ServiceController' => __DIR__ . '/../..' . '/src/Controllers/ServiceController.php',
         'App\\Controllers\\UserController' => __DIR__ . '/../..' . '/src/Controllers/UserController.php',
         'App\\Data\\ViewData' => __DIR__ . '/../..' . '/src/Data/ViewData.php',
-        'App\\Database\\Database' => __DIR__ . '/../..' . '/src/Database/Database.php',
         'App\\Middleware\\AuthMiddleware' => __DIR__ . '/../..' . '/src/Middleware/AuthMiddleware.php',
         'App\\Middleware\\MaintenanceMiddleware' => __DIR__ . '/../..' . '/src/Middleware/MaintenanceMiddleware.php',
         'App\\Middleware\\RoleMiddleware' => __DIR__ . '/../..' . '/src/Middleware/RoleMiddleware.php',

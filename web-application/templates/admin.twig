@@ -47,9 +47,9 @@
                             <td>${{ service.price|number_format(2) }}</td>
                             <td>{{ service.duration }} min</td>
                             <td class="action-cell">
-                                <a class="btn-sm" href="{{ path('/admin/services/' ~ service.ServiceID ~ '/edit') }}">Edit</a>
+                                <a class="btn-sm" href="{{ path('/admin/services/' ~ service.id ~ '/edit') }}">Edit</a>
                                 <form method="post"
-                                      action="{{ path('/admin/services/' ~ service.ServiceID ~ '/delete') }}"
+                                      action="{{ path('/admin/services/' ~ service.id ~ '/delete') }}"
                                       data-confirm="Delete the “{{ service.name }}” service? This cannot be undone."
                                       data-confirm-title="Delete service"
                                       data-confirm-danger
@@ -149,7 +149,7 @@
                     <details class="reply-form-wrap">
                         <summary>{{ review.reply ? 'Edit reply' : 'Reply to this review' }}</summary>
                         <form method="post"
-                              action="{{ path('/admin/reviews/' ~ review.ReviewID ~ '/reply') }}"
+                              action="{{ path('/admin/reviews/' ~ review.id ~ '/reply') }}"
                               data-confirm="Save this reply? It will be visible alongside the review."
                               data-confirm-title="Save reply"
                               class="reply-form">
@@ -208,10 +208,10 @@
                         </dl>
 
                         <footer class="appt-card-actions">
-                            <a class="btn-sm" href="{{ path('/admin/appointments/' ~ appt.AppointmentID ~ '/edit') }}">Edit</a>
+                            <a class="btn-sm" href="{{ path('/admin/appointments/' ~ appt.id ~ '/edit') }}">Edit</a>
                             {% if appt.status != 'cancelled' %}
                                 <form method="post"
-                                      action="{{ path('/admin/appointments/' ~ appt.AppointmentID ~ '/cancel') }}"
+                                      action="{{ path('/admin/appointments/' ~ appt.id ~ '/cancel') }}"
                                       data-confirm="Cancel this appointment for {{ appt.customerName }}? They'll need to rebook."
                                       data-confirm-title="Cancel appointment"
                                       data-confirm-danger

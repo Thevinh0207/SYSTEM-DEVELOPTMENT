@@ -7,9 +7,16 @@ error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
 require __DIR__ . '/../vendor/autoload.php';
 
 use App\Config;
-use App\Database\Database;
+use RedBeanPHP\R;
 
-$pdo = Database::connect(Config::get('database', []));
+$db = Config::get('database', []);
+R::setup(
+    "mysql:host={$db['host']};port={$db['port']};dbname={$db['dbname']};charset={$db['charset']}",
+    $db['user'],
+    $db['pass']
+);
+R::freeze(false);
+$pdo = R::getDatabaseAdapter()->getDatabase()->getPDO();
 $adminEmails = array_map('strtolower', Config::get('admin_emails', []));
 
 // 1. Schema (re-create from scratch)
@@ -23,8 +30,8 @@ try {
     // 2. USERS
     echo "→ Seeding users...\n";
     $userStmt = $pdo->prepare(
-        'INSERT INTO user (firstName, lastName, email, password, phoneNumber, role)
-         VALUES (:firstName, :lastName, :email, :password, :phoneNumber, :role)'
+        'INSERT INTO user (first_name, last_name, email, password, phone_number, role)
+         VALUES (:first_name, :last_name, :email, :password, :phone_number, :role)'
     );
 
     $users = [
@@ -41,12 +48,12 @@ try {
             $role = 'admin';
         }
         $userStmt->execute([
-            ':firstName'   => $firstName,
-            ':lastName'    => $lastName,
-            ':email'       => $email,
-            ':password'    => password_hash($plain, PASSWORD_BCRYPT),
-            ':phoneNumber' => $phone,
-            ':role'        => $role,
+            ':first_name'   => $firstName,
+            ':last_name'    => $lastName,
+            ':email'        => $email,
+            ':password'     => password_hash($plain, PASSWORD_BCRYPT),
+            ':phone_number' => $phone,
+            ':role'         => $role,
         ]);
     }
 
@@ -87,8 +94,8 @@ try {
     // 4. APPOINTMENTS
     echo "→ Seeding appointments...\n";
     $apptStmt = $pdo->prepare(
-        'INSERT INTO appointment (serviceID, userID, date, time, notes, status)
-         VALUES (:serviceID, :userID, :date, :time, :notes, :status)'
+        'INSERT INTO appointment (service_id, user_id, date, time, notes, status)
+         VALUES (:service_id, :user_id, :date, :time, :notes, :status)'
     );
 
     $appointments = [
@@ -104,20 +111,20 @@ try {
 
     foreach ($appointments as [$serviceID, $userID, $date, $time, $notes, $status]) {
         $apptStmt->execute([
-            ':serviceID' => $serviceID,
-            ':userID'    => $userID,
-            ':date'      => $date,
-            ':time'      => $time,
-            ':notes'     => $notes,
-            ':status'    => $status,
+            ':service_id' => $serviceID,
+            ':user_id'    => $userID,
+            ':date'       => $date,
+            ':time'       => $time,
+            ':notes'      => $notes,
+            ':status'     => $status,
         ]);
     }
 
     // 5. REVIEWS  (only completed appointments — uq_review_per_appointment enforces 1:1)
     echo "→ Seeding reviews...\n";
     $reviewStmt = $pdo->prepare(
-        'INSERT INTO reviews (userID, appointmentID, rating, comment, reviewDate)
-         VALUES (:userID, :appointmentID, :rating, :comment, :reviewDate)'
+        'INSERT INTO reviews (user_id, appointment_id, rating, comment, review_date)
+         VALUES (:user_id, :appointment_id, :rating, :comment, :review_date)'
     );
 
     $reviews = [
@@ -129,11 +136,11 @@ try {
 
     foreach ($reviews as [$userID, $appointmentID, $rating, $comment, $date]) {
         $reviewStmt->execute([
-            ':userID'        => $userID,
-            ':appointmentID' => $appointmentID,
-            ':rating'        => $rating,
-            ':comment'       => $comment,
-            ':reviewDate'    => $date,
+            ':user_id'        => $userID,
+            ':appointment_id' => $appointmentID,
+            ':rating'         => $rating,
+            ':comment'        => $comment,
+            ':review_date'    => $date,
         ]);
     }
 
@@ -141,11 +148,11 @@ try {
     echo "→ Seeding payments...\n";
     $payStmt = $pdo->prepare(
         'INSERT INTO payments
-            (appointmentID, paymentFrom, paymentFromName, paymentFromEmail, paymentFromPhone,
-             paymentType, paymentAmount, paymentStatus)
+            (appointment_id, payment_from, payment_from_name, payment_from_email, payment_from_phone,
+             payment_type, payment_amount, payment_status)
          VALUES
-            (:appointmentID, :paymentFrom, :paymentFromName, :paymentFromEmail, :paymentFromPhone,
-             :paymentType, :paymentAmount, :paymentStatus)'
+            (:appointment_id, :payment_from, :payment_from_name, :payment_from_email, :payment_from_phone,
+             :payment_type, :payment_amount, :payment_status)'
     );
 
     $payments = [
@@ -161,14 +168,14 @@ try {
 
     foreach ($payments as [$appointmentID, $from, $name, $email, $phone, $type, $amount, $status]) {
         $payStmt->execute([
-            ':appointmentID'    => $appointmentID,
-            ':paymentFrom'      => $from,
-            ':paymentFromName'  => $name,
-            ':paymentFromEmail' => $email,
-            ':paymentFromPhone' => $phone,
-            ':paymentType'      => $type,
-            ':paymentAmount'    => $amount,
-            ':paymentStatus'    => $status,
+            ':appointment_id'     => $appointmentID,
+            ':payment_from'       => $from,
+            ':payment_from_name'  => $name,
+            ':payment_from_email' => $email,
+            ':payment_from_phone' => $phone,
+            ':payment_type'       => $type,
+            ':payment_amount'     => $amount,
+            ':payment_status'     => $status,
         ]);
     }
 

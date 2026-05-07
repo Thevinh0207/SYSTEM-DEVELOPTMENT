@@ -11,12 +11,6 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Throwable;
 use Twig\Environment;
 
-/**
- * Public marketing pages: home, services list, FAQ, about.
- * The services list is the only one that reads from the database — it groups
- * the live `services` rows by category so deleting a service in /admin makes
- * it disappear from the public menu immediately.
- */
 class HomeController extends BaseController
 {
     public function __construct(
@@ -38,68 +32,33 @@ class HomeController extends BaseController
     public function services(Request $r, Response $response): Response
     {
         try {
-            $rows = $this->services ? $this->services->getAllServices() : [];
+            $beans = $this->services ? $this->services->findAll() : [];
         } catch (Throwable $e) {
-            $rows = [];
+            $beans = [];
         }
 
-        // Group by category so the template can render one section per group.
+        // Group by category for the menu sections.
         $grouped = [];
-        foreach ($rows as $row) {
-            $grouped[$row['category']][] = [
-                'id'          => (int) $row['ServiceID'],
-                'name'        => $row['name'],
-                'description' => $row['description'],
-                'duration'    => $row['duration'] . ' min',
-                'price'       => '$' . number_format((float) $row['price'], 2),
+        foreach ($beans as $s) {
+            $grouped[$s->category][] = [
+                'id'          => (int) $s->id,
+                'name'        => $s->name,
+                'description' => $s->description,
+                'duration'    => $s->duration . ' min',
+                'price'       => '$' . number_format((float) $s->price, 2),
             ];
         }
         ksort($grouped);
 
         return $this->render($response, 'services.twig', [
-            'active'         => 'services',
-            'servicesByCat'  => $grouped,
+            'active'        => 'services',
+            'servicesByCat' => $grouped,
         ]);
     }
 
-    public function serviceDetail(Request $r, Response $response, array $args = []): Response
+    public function serviceDetail(Request $r, Response $response): Response
     {
-        $service = null;
-        $reviews = [];
-
-        if (isset($args['id'])) {
-            try {
-                $service = $this->services?->getById((int) $args['id']);
-                $reviews = $service ? (new \App\Models\ReviewModel())->getByServiceId((int) $args['id']) : [];
-            } catch (Throwable $e) {
-                $service = null;
-                $reviews = [];
-            }
-        }
-
-        if (!$service) {
-            $service = [
-                'ServiceID' => 1,
-                'name' => 'Gel-X Extensions',
-                'category' => 'Extensions',
-                'description' => 'Our Gel-X extension service gives you long-lasting, durable nails with a natural look and feel. Unlike traditional acrylic, Gel-X extensions are gentler on your natural nails while providing strength and flexibility.',
-                'price' => 60.00,
-                'duration' => 60,
-            ];
-        }
-
-        return $this->render($response, 'service-detail.twig', [
-            'active' => 'services',
-            'service' => [
-                'id' => (int) $service['ServiceID'],
-                'name' => $service['name'],
-                'category' => $service['category'],
-                'description' => $service['description'],
-                'price' => '$' . number_format((float) $service['price'], 2),
-                'duration' => (int) $service['duration'] . ' minutes',
-            ],
-            'reviews' => $reviews,
-        ]);
+        return $this->render($response, 'service-detail.twig', ['active' => 'services']);
     }
 
     public function about(Request $r, Response $response): Response

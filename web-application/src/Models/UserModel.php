@@ -5,143 +5,90 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Config;
-use App\Database\Database;
-use PDO;
+use RedBeanPHP\OODBBean;
 use RedBeanPHP\R;
 
 /**
- * UserModel — handles the `user` table via RedBeanPHP.
+ * UserModel
  *
- * Method signatures and return shapes are identical to the previous PDO-only
- * version so controllers and templates don't need to change. Internally every
- * query now flows through RedBean's adapter (R::getRow / R::getCell / R::exec).
+ * Data access layer for the `user` table — managed entirely by RedBeanPHP.
+ * Beans are returned as RedBean objects; controllers can read columns via
+ * $bean->firstName, $bean->email, etc., and convert with $bean->export().
  */
 class UserModel
 {
-    private const TABLE = 'user';
-
     public const ROLE_ADMIN  = 'admin';
     public const ROLE_CLIENT = 'client';
     public const ROLE_GUEST  = 'guest';
 
-    public function __construct(?PDO $db = null)
+    public function findAll(): array
     {
-        // Constructor still accepts a PDO for backwards compatibility, but
-        // calling Database::connect() also boots RedBean if it wasn't already.
-        Database::connect();
+        return R::findAll('user', 'ORDER BY id ASC');
     }
 
-    public function getAll(): array
+    public function findByEmail(string $email): ?OODBBean
     {
-        return R::getAll('SELECT * FROM ' . self::TABLE . ' ORDER BY userID ASC');
+        return R::findOne('user', 'email = ?', [$email]);
     }
 
-    public function getById(int $id): ?array
+    public function load(int $id): ?OODBBean
     {
-        $row = R::getRow('SELECT * FROM ' . self::TABLE . ' WHERE userID = ?', [$id]);
-        return $row ?: null;
+        $bean = R::load('user', $id);
+        return $bean->id ? $bean : null;
     }
 
-    public function findUserByEmail(string $email): ?array
-    {
-        $row = R::getRow('SELECT * FROM ' . self::TABLE . ' WHERE email = ? LIMIT 1', [$email]);
-        return $row ?: null;
-    }
-
-    public function findUserByUserId(int $userId): ?array
-    {
-        return $this->getById($userId);
-    }
-
-    public function signUp(array $data): ?int
+    public function create(array $data): ?OODBBean
     {
         if (!$this->validateRegEx($data)) {
             return null;
         }
-        if ($this->findUserByEmail($data['email'])) {
+        if ($this->findByEmail($data['email'])) {
             return null;
         }
 
-        $role = $this->isAdminEmail($data['email']) ? self::ROLE_ADMIN : ($data['role'] ?? self::ROLE_CLIENT);
+        $user              = R::dispense('user');
+        $user->firstName   = $data['firstName'];
+        $user->lastName    = $data['lastName'];
+        $user->email       = $data['email'];
+        $user->password    = password_hash($data['password'], PASSWORD_BCRYPT);
+        $user->phoneNumber = $data['phoneNumber'] ?? '';
+        $user->role        = $this->isAdminEmail($data['email'])
+            ? self::ROLE_ADMIN
+            : ($data['role'] ?? self::ROLE_CLIENT);
 
-        R::exec(
-            'INSERT INTO ' . self::TABLE . '
-                (firstName, lastName, email, password, phoneNumber, role)
-             VALUES (?, ?, ?, ?, ?, ?)',
-            [
-                $data['firstName'],
-                $data['lastName'],
-                $data['email'],
-                password_hash($data['password'], PASSWORD_BCRYPT),
-                $data['phoneNumber'] ?? '',
-                $role,
-            ]
-        );
+        R::store($user);
+        return $user;
+    }
 
-        return (int) R::getDatabaseAdapter()->getInsertID();
+    public function save(OODBBean $user): void
+    {
+        R::store($user);
+    }
+
+    public function delete(OODBBean $user): void
+    {
+        R::trash($user);
+    }
+
+    public function login(string $email, string $password): ?OODBBean
+    {
+        $user = $this->findByEmail($email);
+        if (!$user || !password_verify($password, $user->password)) {
+            return null;
+        }
+        return $user;
+    }
+
+    public function isAdmin(int $userId): bool
+    {
+        $user = $this->load($userId);
+        return $user !== null && $user->role === self::ROLE_ADMIN;
     }
 
     public function isAdminEmail(string $email): bool
     {
         $admins = Config::get('admin_emails', []);
         return in_array(strtolower(trim($email)), array_map('strtolower', $admins), true);
-    }
-
-    public function login(string $email, string $password): ?array
-    {
-        $user = $this->findUserByEmail($email);
-        if (!$user || !password_verify($password, $user['password'])) {
-            return null;
-        }
-        return $user;
-    }
-
-    public function logout(): bool
-    {
-        $_SESSION = [];
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            session_destroy();
-        }
-        return true;
-    }
-
-    public function isAdmin(int $userId): bool
-    {
-        $user = $this->getById($userId);
-        return $user !== null && $user['role'] === self::ROLE_ADMIN;
-    }
-
-    public function update(int $id, array $data): bool
-    {
-        $existing = $this->getById($id);
-        if (!$existing) {
-            return false;
-        }
-
-        R::exec(
-            'UPDATE ' . self::TABLE . '
-             SET firstName   = ?,
-                 lastName    = ?,
-                 email       = ?,
-                 phoneNumber = ?,
-                 role        = ?
-             WHERE userID = ?',
-            [
-                $data['firstName']   ?? $existing['firstName'],
-                $data['lastName']    ?? $existing['lastName'],
-                $data['email']       ?? $existing['email'],
-                $data['phoneNumber'] ?? $existing['phoneNumber'],
-                $data['role']        ?? $existing['role'],
-                $id,
-            ]
-        );
-        return true;
-    }
-
-    public function delete(int $id): bool
-    {
-        R::exec('DELETE FROM ' . self::TABLE . ' WHERE userID = ?', [$id]);
-        return true;
     }
 
     public function validateRegEx(array $data): bool

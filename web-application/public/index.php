@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Config;
 use App\Controllers\AdminPanelController;
 use App\Controllers\AuthController;
 use App\Controllers\BookingController;
@@ -14,6 +15,7 @@ use App\Models\ServiceModel;
 use App\Models\UserModel;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use RedBeanPHP\R;
 use Slim\Exception\HttpMethodNotAllowedException;
 use Slim\Exception\HttpNotFoundException;
 use Slim\Factory\AppFactory;
@@ -29,6 +31,15 @@ error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
 session_start();
 
 require dirname(__DIR__) . '/vendor/autoload.php';
+
+// ─── Database (RedBeanPHP) ──────────────────────────────────────────────
+$db = Config::get('database', []);
+R::setup(
+    "mysql:host={$db['host']};port={$db['port']};dbname={$db['dbname']};charset={$db['charset']}",
+    $db['user'],
+    $db['pass']
+);
+R::freeze(false);
 
 // ─── Base path detection ────────────────────────────────────────────────
 $scriptDir = str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '')));
@@ -65,7 +76,8 @@ $booking   = new BookingController(
 $dashboard = new DashboardController(
     $twig, $basePath,
     new AppointmentModel(),
-    new ReviewModel()
+    new ReviewModel(),
+    new ServiceModel()
 );
 $admin     = new AdminPanelController(
     $twig, $basePath,

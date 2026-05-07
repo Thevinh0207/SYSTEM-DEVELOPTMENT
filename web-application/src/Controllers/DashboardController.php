@@ -6,23 +6,20 @@ namespace App\Controllers;
 
 use App\Models\AppointmentModel;
 use App\Models\ReviewModel;
+use App\Models\ServiceModel;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Throwable;
 use Twig\Environment;
 
-/**
- * Client-facing dashboard:
- *   /dashboard          → tabbed view (upcoming / past / reviews)
- *   /dashboard/review   → POST: create a review for a completed appointment
- */
 class DashboardController extends BaseController
 {
     public function __construct(
         Environment $twig,
         string $basePath,
         private AppointmentModel $appointments,
-        private ReviewModel $reviews
+        private ReviewModel $reviews,
+        private ServiceModel $services
     ) {
         parent::__construct($twig, $basePath);
     }
@@ -34,36 +31,63 @@ class DashboardController extends BaseController
         }
 
         $userId = (int) $_SESSION['user']['id'];
-        // Reviews are no longer a separate tab — they show inline in History.
-        $tab = (string) ($r->getQueryParams()['tab'] ?? 'upcoming');
-        if ($tab === 'reviews') {
-            $tab = 'past';
-        }
+        $tab    = (string) ($r->getQueryParams()['tab'] ?? 'upcoming');
+        if ($tab === 'reviews') $tab = 'past';
         if (!in_array($tab, ['upcoming', 'past'], true)) {
             $tab = 'upcoming';
         }
 
         try {
-            $appointments = $this->appointments->getAllAppointmentByUserId($userId);
-            $reviews      = $this->reviews->getAllReviewsByUserId($userId);
+            $appointments = $this->appointments->findByUserId($userId);
+            $reviews      = $this->reviews->findByUserId($userId);
         } catch (Throwable $e) {
             $appointments = $reviews = [];
         }
 
-        $today    = date('Y-m-d');
-        $upcoming = array_values(array_filter(
-            $appointments,
-            fn($a) => $a['date'] >= $today && !in_array($a['status'], ['cancelled', 'completed'], true)
-        ));
-        $past = array_values(array_filter(
-            $appointments,
-            fn($a) => $a['date'] < $today || in_array($a['status'], ['completed', 'cancelled'], true)
-        ));
+        // Map service names by id once so we can decorate appointments.
+        $serviceNames = [];
+        foreach ($this->services->findAll() as $svc) {
+            $serviceNames[(int) $svc->id] = $svc->name;
+        }
 
+        $today    = date('Y-m-d');
+        $upcoming = [];
+        $past     = [];
+        foreach ($appointments as $a) {
+            $row = [
+                'id'          => (int) $a->id,
+                'serviceID'   => (int) $a->serviceID,
+                'serviceName' => $serviceNames[(int) $a->serviceID] ?? '—',
+                'date'        => $a->date,
+                'time'        => $a->time,
+                'status'      => $a->status,
+                'notes'       => $a->notes,
+            ];
+            $isPast = $row['date'] < $today
+                || in_array($row['status'], ['completed', 'cancelled'], true);
+            if ($isPast) {
+                $past[] = $row;
+            } elseif ($row['status'] !== 'cancelled') {
+                $upcoming[] = $row;
+            }
+        }
+
+        // Index reviews by appointment id for inline display.
         $reviewedIds = [];
         foreach ($reviews as $rv) {
-            $reviewedIds[(int) $rv['appointmentID']] = $rv;
+            $reviewedIds[(int) $rv->appointmentID] = [
+                'id'            => (int) $rv->id,
+                'appointmentID' => (int) $rv->appointmentID,
+                'rating'        => (int) $rv->rating,
+                'comment'       => $rv->comment,
+                'reviewDate'    => $rv->reviewDate,
+                'reply'         => $rv->reply,
+                'repliedAt'     => $rv->repliedAt,
+            ];
         }
+
+        // For the Reviews-left count in the profile sidebar.
+        $myReviewsCount = count($reviews);
 
         $flash        = $_SESSION['dashboard_flash'] ?? null;
         $reviewErrors = $_SESSION['review_errors']   ?? [];
@@ -75,7 +99,7 @@ class DashboardController extends BaseController
             'tab'          => $tab,
             'upcoming'     => $upcoming,
             'past'         => $past,
-            'myReviews'    => $reviews,
+            'myReviews'    => array_fill(0, $myReviewsCount, true), // length-only sentinel
             'reviewedIds'  => $reviewedIds,
             'flash'        => $flash,
             'reviewErrors' => $reviewErrors,
@@ -101,14 +125,10 @@ class DashboardController extends BaseController
         if (strlen($comment) > 255)    $errors['comment'] = 'Comment must be 255 characters or fewer.';
 
         if (!$errors) {
-            try {
-                $appt = $this->appointments->getById($apptId);
-            } catch (Throwable $e) {
-                $appt = null;
-            }
-            if (!$appt || (int) $appt['userID'] !== $userId) {
+            $appt = $this->appointments->load($apptId);
+            if (!$appt || (int) $appt->userID !== $userId) {
                 $errors['general'] = 'You can only review your own appointments.';
-            } elseif ($appt['status'] !== 'completed') {
+            } elseif ($appt->status !== 'completed') {
                 $errors['general'] = 'You can only review completed appointments.';
             }
         }
@@ -119,23 +139,18 @@ class DashboardController extends BaseController
             return $this->redirect('/dashboard?tab=past');
         }
 
-        try {
-            $newId = $this->reviews->createReview([
-                'userID'        => $userId,
-                'appointmentID' => $apptId,
-                'rating'        => $rating,
-                'comment'       => $comment !== '' ? $comment : null,
-                'reviewDate'    => date('Y-m-d'),
-            ]);
-            $_SESSION['dashboard_flash'] = $newId
-                ? ['type' => 'success', 'message' => 'Thanks! Your review has been posted.']
-                : ['type' => 'error',   'message' => 'Could not save your review. You may have already reviewed this appointment.'];
-        } catch (Throwable $e) {
-            $_SESSION['dashboard_flash'] = ['type' => 'error', 'message' => 'You may have already reviewed this appointment.'];
-        }
+        $review = $this->reviews->create([
+            'userID'        => $userId,
+            'appointmentID' => $apptId,
+            'rating'        => $rating,
+            'comment'       => $comment !== '' ? $comment : null,
+            'reviewDate'    => date('Y-m-d'),
+        ]);
 
-        // After posting a review, return to the History tab where it now appears
-        // inline next to the appointment.
+        $_SESSION['dashboard_flash'] = $review
+            ? ['type' => 'success', 'message' => 'Thanks! Your review has been posted.']
+            : ['type' => 'error',   'message' => 'Could not save your review. You may have already reviewed this appointment.'];
+
         return $this->redirect('/dashboard?tab=past');
     }
 }

@@ -10,13 +10,6 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Throwable;
 use Twig\Environment;
 
-/**
- * AuthController — login, register, logout.
- *
- * Talks to UserModel for password verification and account creation.
- * Sessions are regenerated on successful login/register to prevent fixation.
- * Logout wipes session data, expires the cookie, and destroys the session.
- */
 class AuthController extends BaseController
 {
     public function __construct(
@@ -29,11 +22,10 @@ class AuthController extends BaseController
 
     public function showLogin(Request $r, Response $response): Response
     {
-        $returnTo = $this->captureReturnTo($r);
         $errors = $_SESSION['auth_errors'] ?? [];
         $form   = $_SESSION['auth_form']   ?? [];
         unset($_SESSION['auth_errors'], $_SESSION['auth_form']);
-        return $this->render($response, 'auth/login.twig', ['errors' => $errors, 'form' => $form, 'returnTo' => $returnTo]);
+        return $this->render($response, 'auth/login.twig', ['errors' => $errors, 'form' => $form]);
     }
 
     public function login(Request $r, Response $response): Response
@@ -62,20 +54,15 @@ class AuthController extends BaseController
         }
 
         $this->signInUser($user);
-        $returnTo = $this->consumeReturnTo();
-        if ($returnTo !== null && $user['role'] !== UserModel::ROLE_ADMIN) {
-            return $this->redirect($returnTo);
-        }
-        return $this->redirect($user['role'] === UserModel::ROLE_ADMIN ? '/admin' : '/dashboard');
+        return $this->redirect($user->role === UserModel::ROLE_ADMIN ? '/admin' : '/dashboard');
     }
 
     public function showRegister(Request $r, Response $response): Response
     {
-        $returnTo = $this->captureReturnTo($r);
         $errors = $_SESSION['auth_errors'] ?? [];
         $form   = $_SESSION['auth_form']   ?? [];
         unset($_SESSION['auth_errors'], $_SESSION['auth_form']);
-        return $this->render($response, 'auth/register.twig', ['errors' => $errors, 'form' => $form, 'returnTo' => $returnTo]);
+        return $this->render($response, 'auth/register.twig', ['errors' => $errors, 'form' => $form]);
     }
 
     public function register(Request $r, Response $response): Response
@@ -98,8 +85,6 @@ class AuthController extends BaseController
         if ($form['phoneNumber'] === '') {
             $errors['phoneNumber'] = 'Phone number is required.';
         } else {
-            // Strip allowed formatting characters (+ - space parentheses) and ensure
-            // what's left is all digits and a sensible length.
             $digits = preg_replace('/[\s\-\+\(\)]/', '', $form['phoneNumber']);
             if (!ctype_digit($digits)) {
                 $errors['phoneNumber'] = 'Phone number must contain digits only (you can use + - spaces or parentheses).';
@@ -118,31 +103,26 @@ class AuthController extends BaseController
         }
 
         try {
-            if ($this->users->findUserByEmail($form['email'])) {
+            if ($this->users->findByEmail($form['email'])) {
                 $_SESSION['auth_errors'] = ['email' => 'An account with that email already exists.'];
                 $_SESSION['auth_form']   = $form;
                 return $this->redirect('/register');
             }
-            $userId = $this->users->signUp($form + ['password' => $password]);
+            $created = $this->users->create($form + ['password' => $password]);
         } catch (Throwable $e) {
             $_SESSION['auth_errors'] = ['general' => 'Registration service unavailable. Please try again later.'];
             $_SESSION['auth_form']   = $form;
             return $this->redirect('/register');
         }
 
-        if (!$userId) {
+        if (!$created) {
             $_SESSION['auth_errors'] = ['general' => 'Could not create account. Please check your details.'];
             $_SESSION['auth_form']   = $form;
             return $this->redirect('/register');
         }
 
-        $created = $this->users->getById($userId);
         $this->signInUser($created);
-        $returnTo = $this->consumeReturnTo();
-        if ($returnTo !== null && $created['role'] !== UserModel::ROLE_ADMIN) {
-            return $this->redirect($returnTo);
-        }
-        return $this->redirect($created['role'] === UserModel::ROLE_ADMIN ? '/admin' : '/dashboard');
+        return $this->redirect($created->role === UserModel::ROLE_ADMIN ? '/admin' : '/dashboard');
     }
 
     public function logout(Request $r, Response $response): Response
@@ -165,48 +145,19 @@ class AuthController extends BaseController
             session_destroy();
         }
 
-        // Redirect to home with a flag so the toast banner can render once.
         return $this->redirect('/?logged_out=1');
     }
 
-    private function signInUser(array $user): void
+    private function signInUser($userBean): void
     {
         session_regenerate_id(true);
         $_SESSION['user'] = [
-            'id'          => (int) $user['userID'],
-            'firstName'   => $user['firstName'],
-            'lastName'    => $user['lastName'],
-            'email'       => $user['email'],
-            'phoneNumber' => $user['phoneNumber'],
-            'role'        => $user['role'],
+            'id'          => (int) $userBean->id,
+            'firstName'   => $userBean->firstName,
+            'lastName'    => $userBean->lastName,
+            'email'       => $userBean->email,
+            'phoneNumber' => $userBean->phoneNumber,
+            'role'        => $userBean->role,
         ];
-        $_SESSION['user_id'] = $_SESSION['user']['id'];
-        $_SESSION['user_role'] = $_SESSION['user']['role'];
-    }
-
-    private function captureReturnTo(Request $r): ?string
-    {
-        $returnTo = (string) ($r->getQueryParams()['return'] ?? ($_SESSION['auth_return'] ?? ''));
-        if (!$this->isSafeReturnTo($returnTo)) {
-            unset($_SESSION['auth_return']);
-            return null;
-        }
-
-        $_SESSION['auth_return'] = $returnTo;
-        return $returnTo;
-    }
-
-    private function consumeReturnTo(): ?string
-    {
-        $returnTo = $_SESSION['auth_return'] ?? null;
-        unset($_SESSION['auth_return']);
-        return is_string($returnTo) && $this->isSafeReturnTo($returnTo) ? $returnTo : null;
-    }
-
-    private function isSafeReturnTo(string $returnTo): bool
-    {
-        return str_starts_with($returnTo, '/book/')
-            && !str_contains($returnTo, '//')
-            && !str_contains($returnTo, '\\');
     }
 }

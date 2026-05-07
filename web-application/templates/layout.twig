@@ -38,6 +38,13 @@
     {% endblock %}
     {% block content %}{% endblock %}
 
+    {# Site footer — shown on every public page. Excluded from admin and the
+       auth screens (which render their own minimal chrome). #}
+    {% set _bodyClass = block('body_class') %}
+    {% if _bodyClass != 'admin-page' and _bodyClass != 'auth-page' %}
+        {% include 'partials/footer.twig' %}
+    {% endif %}
+
     {% if globalToast %}
         <div id="global-toast" class="toast toast-{{ globalToast.type|default('success') }}" role="status" aria-live="polite">
             <span class="toast-icon">✓</span>

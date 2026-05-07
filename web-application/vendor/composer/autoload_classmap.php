@@ -22,7 +22,6 @@ return array(
     'App\\Controllers\\ServiceController' => $baseDir . '/src/Controllers/ServiceController.php',
     'App\\Controllers\\UserController' => $baseDir . '/src/Controllers/UserController.php',
     'App\\Data\\ViewData' => $baseDir . '/src/Data/ViewData.php',
-    'App\\Database\\Database' => $baseDir . '/src/Database/Database.php',
     'App\\Middleware\\AuthMiddleware' => $baseDir . '/src/Middleware/AuthMiddleware.php',
     'App\\Middleware\\MaintenanceMiddleware' => $baseDir . '/src/Middleware/MaintenanceMiddleware.php',
     'App\\Middleware\\RoleMiddleware' => $baseDir . '/src/Middleware/RoleMiddleware.php',

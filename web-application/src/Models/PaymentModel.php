@@ -4,62 +4,47 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Database\Database;
-use PDO;
+use RedBeanPHP\OODBBean;
 use RedBeanPHP\R;
 
 /**
- * PaymentModel — handles the `payments` table via RedBeanPHP.
+ * PaymentModel
  *
- * Public methods unchanged. Stores a snapshot of the payer's contact info so
- * historical payments stay accurate even if a user later edits their profile.
- * Guests have paymentFrom = NULL but still have name/email/phone on the row.
+ * Data access for the `payments` table — managed by RedBeanPHP.
+ *
+ * Payments snapshot the payer's contact info so historical records stay
+ * accurate even if the user later changes their profile. Guest checkouts
+ * have paymentFrom = NULL.
  */
 class PaymentModel
 {
-    private const TABLE = 'payments';
-
     public const STATUS_PENDING = 'pending';
     public const STATUS_PAID    = 'paid';
     public const STATUS_FAILED  = 'failed';
     public const STATUS_REFUND  = 'refunded';
 
-    public function __construct(?PDO $db = null)
+    public function findAll(): array
     {
-        Database::connect();
+        return R::findAll('payments', 'ORDER BY created_at DESC');
     }
 
-    public function getPayment(int $id): ?array
+    public function findByUserId(int $userId): array
     {
-        $row = R::getRow('SELECT * FROM ' . self::TABLE . ' WHERE paymentID = ?', [$id]);
-        return $row ?: null;
+        return R::find('payments', 'paymentFrom = ? ORDER BY created_at DESC', [$userId]);
     }
 
-    public function viewPayment(int $id): string
+    public function findByAppointmentId(int $appointmentId): ?OODBBean
     {
-        $payment = $this->getPayment($id);
-        if (!$payment) {
-            return 'Payment not found.';
-        }
-        return sprintf(
-            'Payment #%d — %s $%.2f (%s)',
-            $payment['paymentID'],
-            $payment['paymentType'],
-            (float) $payment['paymentAmount'],
-            $payment['paymentStatus']
-        );
+        return R::findOne('payments', 'appointmentID = ?', [$appointmentId]);
     }
 
-    public function getByAppointmentId(int $appointmentId): ?array
+    public function load(int $id): ?OODBBean
     {
-        $row = R::getRow(
-            'SELECT * FROM ' . self::TABLE . ' WHERE appointmentID = ? LIMIT 1',
-            [$appointmentId]
-        );
-        return $row ?: null;
+        $bean = R::load('payments', $id);
+        return $bean->id ? $bean : null;
     }
 
-    public function create(array $data): ?int
+    public function create(array $data): ?OODBBean
     {
         $from = $data['paymentFrom'] ?? null;
         $from = ($from === null || $from === '') ? null : (int) $from;
@@ -70,14 +55,11 @@ class PaymentModel
 
         // Snapshot missing fields from the user table for registered payers.
         if ($from !== null && ($name === '' || $email === '' || $phone === '')) {
-            $u = R::getRow(
-                'SELECT firstName, lastName, email, phoneNumber FROM user WHERE userID = ?',
-                [$from]
-            );
-            if ($u) {
-                $name  = $name  !== '' ? $name  : trim($u['firstName'] . ' ' . $u['lastName']);
-                $email = $email !== '' ? $email : (string) $u['email'];
-                $phone = $phone !== '' ? $phone : (string) $u['phoneNumber'];
+            $u = R::load('user', $from);
+            if ($u->id) {
+                $name  = $name  !== '' ? $name  : trim($u->firstName . ' ' . $u->lastName);
+                $email = $email !== '' ? $email : (string) $u->email;
+                $phone = $phone !== '' ? $phone : (string) $u->phoneNumber;
             }
         }
 
@@ -88,122 +70,27 @@ class PaymentModel
             $name = 'Guest';
         }
 
-        R::exec(
-            'INSERT INTO ' . self::TABLE . '
-                (appointmentID, paymentFrom, paymentFromName, paymentFromEmail, paymentFromPhone,
-                 paymentType, paymentAmount, paymentStatus)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [
-                (int) $data['appointmentID'],
-                $from,
-                $name,
-                $email !== '' ? $email : null,
-                $phone !== '' ? $phone : null,
-                $data['paymentType'],
-                (float) $data['paymentAmount'],
-                $data['paymentStatus'] ?? self::STATUS_PENDING,
-            ]
-        );
+        $payment                   = R::dispense('payments');
+        $payment->appointmentID    = (int) $data['appointmentID'];
+        $payment->paymentFrom      = $from;
+        $payment->paymentFromName  = $name;
+        $payment->paymentFromEmail = $email !== '' ? $email : null;
+        $payment->paymentFromPhone = $phone !== '' ? $phone : null;
+        $payment->paymentType      = $data['paymentType'];
+        $payment->paymentAmount    = (float) $data['paymentAmount'];
+        $payment->paymentStatus    = $data['paymentStatus'] ?? self::STATUS_PENDING;
 
-        $id = (int) R::getDatabaseAdapter()->getInsertID();
-        return $id ?: null;
+        R::store($payment);
+        return $payment;
     }
 
-    public function isFromGuest(array $payment): bool
+    public function save(OODBBean $payment): void
     {
-        return empty($payment['paymentFrom']);
+        R::store($payment);
     }
 
-    public function updateStatus(int $id, string $status): bool
+    public function delete(OODBBean $payment): void
     {
-        R::exec(
-            'UPDATE ' . self::TABLE . ' SET paymentStatus = ? WHERE paymentID = ?',
-            [$status, $id]
-        );
-        return true;
-    }
-
-    // ── ADMIN-ONLY ─────────────────────────────────────────────────────────
-    public function getAllPayments(): array
-    {
-        return R::getAll(
-            'SELECT p.paymentID,
-                    p.paymentFrom,
-                    p.paymentFromName       AS payerName,
-                    p.paymentFromEmail      AS payerEmail,
-                    p.paymentFromPhone      AS payerPhone,
-                    p.paymentType,
-                    p.paymentAmount,
-                    p.paymentStatus,
-                    p.created_at,
-                    a.AppointmentID,
-                    a.date                  AS appointmentDate,
-                    a.time                  AS appointmentTime,
-                    CASE WHEN p.paymentFrom IS NULL THEN "guest" ELSE "client" END AS payerType
-             FROM ' . self::TABLE . ' p
-             JOIN appointment a ON p.appointmentID = a.AppointmentID
-             ORDER BY p.created_at DESC'
-        );
-    }
-
-    public function getInsights(): array
-    {
-        $totals = R::getRow(
-            'SELECT
-                COUNT(*)                                     AS total_count,
-                COALESCE(SUM(paymentAmount), 0)              AS total_revenue,
-                COALESCE(SUM(CASE WHEN paymentStatus = "paid"    THEN paymentAmount END), 0) AS revenue_paid,
-                COALESCE(SUM(CASE WHEN paymentStatus = "pending" THEN paymentAmount END), 0) AS revenue_pending,
-                COALESCE(AVG(paymentAmount), 0)              AS average_amount
-             FROM ' . self::TABLE
-        );
-
-        $byStatus = R::getAll(
-            'SELECT paymentStatus, COUNT(*) AS count, SUM(paymentAmount) AS total
-             FROM ' . self::TABLE . '
-             GROUP BY paymentStatus'
-        );
-
-        $byType = R::getAll(
-            'SELECT paymentType, COUNT(*) AS count, SUM(paymentAmount) AS total
-             FROM ' . self::TABLE . '
-             GROUP BY paymentType'
-        );
-
-        return [
-            'totals'    => $totals ?: [],
-            'by_status' => $byStatus,
-            'by_type'   => $byType,
-        ];
-    }
-
-    // ── CLIENT-SCOPED ──────────────────────────────────────────────────────
-    public function getRecentPaymentsByUserId(int $userId, int $limit = 10): array
-    {
-        $limit = max(1, min(100, $limit));
-        return R::getAll(
-            'SELECT p.paymentID, p.paymentType, p.paymentAmount, p.paymentStatus,
-                    p.created_at, a.date AS appointmentDate, s.name AS serviceName
-             FROM ' . self::TABLE . ' p
-             JOIN appointment a ON p.appointmentID = a.AppointmentID
-             JOIN services    s ON a.serviceID     = s.ServiceID
-             WHERE a.userID = ?
-             ORDER BY p.created_at DESC
-             LIMIT ' . $limit,
-            [$userId]
-        );
-    }
-
-    public function getPaymentForUser(int $paymentId, int $userId): ?array
-    {
-        $row = R::getRow(
-            'SELECT p.*
-             FROM ' . self::TABLE . ' p
-             JOIN appointment a ON p.appointmentID = a.AppointmentID
-             WHERE p.paymentID = ? AND a.userID = ?
-             LIMIT 1',
-            [$paymentId, $userId]
-        );
-        return $row ?: null;
+        R::trash($payment);
     }
 }
