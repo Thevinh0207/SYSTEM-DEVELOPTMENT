@@ -12,7 +12,7 @@
             <p class="dashboard-subtitle">Manage your appointments and reviews</p>
         </div>
         <div class="dashboard-actions">
-            <a class="btn" href="{{ path('/book') }}">+ Book again</a>
+            <a class="btn" href="{{ path('/book?new=1') }}">+ Book again</a>
             <form method="post" action="{{ path('/logout') }}" style="display:inline;">
                 <button type="submit" class="btn outline">Log out</button>
             </form>
@@ -28,10 +28,23 @@
 
         {# Profile sidebar (always visible) #}
         <aside class="profile-card">
+            <p class="profile-label">Account Information</p>
             <div class="profile-avatar">{{ user.firstName|slice(0,1)|upper }}{{ user.lastName|slice(0,1)|upper }}</div>
             <h2>{{ user.firstName }} {{ user.lastName }}</h2>
-            <p class="muted">{{ user.email }}</p>
-            <p class="muted">{{ user.phoneNumber|default('—') }}</p>
+            <dl class="account-info">
+                <div>
+                    <dt>Email</dt>
+                    <dd>{{ user.email }}</dd>
+                </div>
+                <div>
+                    <dt>Phone</dt>
+                    <dd>{{ user.phoneNumber|default('Not provided') }}</dd>
+                </div>
+                <div>
+                    <dt>Account Type</dt>
+                    <dd>{{ user.role|default('client')|capitalize }}</dd>
+                </div>
+            </dl>
 
             <hr>
 
@@ -68,7 +81,7 @@
                         <div class="empty-card">
                             <h2>No upcoming appointments</h2>
                             <p class="muted">Ready for your next visit? Book a service in just a few clicks.</p>
-                            <a class="btn" href="{{ path('/book') }}">Book now</a>
+                            <a class="btn" href="{{ path('/book?new=1') }}">Book now</a>
                         </div>
                     {% else %}
                         <div class="cards-grid">

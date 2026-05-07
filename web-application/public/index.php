@@ -107,6 +107,7 @@ $errorMiddleware->setDefaultErrorHandler(
 $app->get('/',                            [$home, 'home']);
 $app->get('/services',                    [$home, 'services']);
 $app->get('/services/gel-x-extensions',   [$home, 'serviceDetail']);
+$app->get('/services/{id:[0-9]+}',        [$home, 'serviceDetail']);
 $app->get('/about',                       [$home, 'about']);
 $app->get('/faq',                         [$home, 'faq']);
 

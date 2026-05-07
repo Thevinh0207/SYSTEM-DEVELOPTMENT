@@ -11,14 +11,14 @@
         {% for category, rows in servicesByCat %}
             <h2>{{ category }}</h2>
             {% for row in rows %}
-                <div class="menu-row">
+                <a class="menu-row" href="{{ path('/services/' ~ row.id) }}">
                     <div class="menu-row-main">
                         <strong>{{ row.name }}</strong>
                         {% if row.description %}<p class="muted">{{ row.description }}</p>{% endif %}
                     </div>
                     <span class="time">{{ row.duration }}</span>
                     <span class="price">{{ row.price }}</span>
-                </div>
+                </a>
             {% endfor %}
         {% else %}
             <p class="muted" style="text-align:center; padding: 40px;">
@@ -27,7 +27,7 @@
         {% endfor %}
 
         {% if servicesByCat|length > 0 %}
-            <a class="btn centered" href="{{ path('/book') }}">Book Now</a>
+            <a class="btn centered" href="{{ path('/book?new=1') }}">Book Now</a>
         {% endif %}
     </section>
 </main>

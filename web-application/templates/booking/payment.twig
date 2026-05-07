@@ -1,13 +1,14 @@
 {% extends 'layout.twig' %}
-{% block title %}Deposit Payment | Studio Doki{% endblock %}
+{% block title %}Review & Deposit Payment | Studio Doki{% endblock %}
 {% block content %}
 <main class="booking">
     <h1>Book Your Appointment</h1>
-    <p class="subtitle">Step 5 of 6: Deposit Payment</p>
+    <p class="subtitle">Step 5 of 6: Review &amp; Deposit Payment</p>
+    <a class="booking-back" href="{{ path('/book/date') }}">Back to Date &amp; Time</a>
     <div class="booking-grid">
         <form class="form-panel" action="{{ path('/book/payment') }}" method="post" novalidate>
             {% if errors.general is defined %}<p class="error">{{ errors.general }}</p>{% endif %}
-            <p class="notice">A $20 non-refundable deposit is required to secure your appointment. This will be applied to your total service cost.</p>
+            <p class="notice">Review your appointment summary, then pay the $20 non-refundable deposit to secure your booking. This will be applied to your total service cost.</p>
             <label>Card Number<input name="cardNumber" placeholder="1234 5678 9012 3456" required></label>
             {% if errors.cardNumber is defined %}<p class="error">{{ errors.cardNumber }}</p>{% endif %}
             <div class="form-row">
@@ -18,7 +19,7 @@
             {% if errors.cardCvv is defined %}<p class="error">{{ errors.cardCvv }}</p>{% endif %}
             <label>Cardholder Name<input name="cardName" value="{{ form.cardName|default('') }}" required></label>
             {% if errors.cardName is defined %}<p class="error">{{ errors.cardName }}</p>{% endif %}
-            <button class="btn">Pay $20 Deposit</button>
+            <button class="btn">Confirm Booking &amp; Pay $20 Deposit</button>
         </form>
         {% include 'partials/summary.twig' %}
     </div>

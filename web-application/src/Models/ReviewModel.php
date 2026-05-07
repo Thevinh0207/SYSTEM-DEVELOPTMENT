@@ -92,6 +92,25 @@ class ReviewModel
         return $stmt->fetchAll();
     }
 
+    public function getByServiceId(int $serviceId, int $limit = 6): array
+    {
+        $limit = max(1, min(20, $limit));
+        $stmt = $this->db->prepare(
+            'SELECT r.*,
+                    CONCAT(u.firstName, " ", u.lastName) AS authorName,
+                    s.name AS serviceName
+             FROM ' . self::TABLE . ' r
+             JOIN user u        ON r.userID        = u.userID
+             JOIN appointment a ON r.appointmentID = a.AppointmentID
+             JOIN services s    ON a.serviceID     = s.ServiceID
+             WHERE s.ServiceID = :serviceId
+             ORDER BY r.reviewDate DESC
+             LIMIT ' . $limit
+        );
+        $stmt->execute([':serviceId' => $serviceId]);
+        return $stmt->fetchAll();
+    }
+
     public function findReviewsByUserId(int $userId): bool
     {
         $stmt = $this->db->prepare(

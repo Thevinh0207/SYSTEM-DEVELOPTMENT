@@ -1,21 +1,30 @@
 {% extends 'layout.twig' %}
-{% block title %}Gel-X Extensions | Studio Doki{% endblock %}
+{% block title %}{{ service.name|default('Service Details') }} | Studio Doki{% endblock %}
 {% block content %}
 <main class="detail-page">
-    <div class="crumbs">Services <span>&gt;</span> Extensions <span>&gt;</span> Gel-X Extensions</div>
+    <div class="crumbs"><a href="{{ path('/services') }}">Services</a> <span>&gt;</span> {{ service.category|default('Service') }} <span>&gt;</span> {{ service.name|default('Details') }}</div>
     <section class="detail-grid">
         <div>
-            <h1>Gel-X Extensions</h1>
-            <p class="meta"><span>$60+</span> 60 minutes</p>
-            <p>Our Gel-X extension service gives you long-lasting, durable nails with a natural look and feel. Unlike traditional acrylic, Gel-X extensions are gentler on your natural nails while providing strength and flexibility.</p>
-            <p>Each set is custom-fitted to your nail shape and carefully applied for maximum comfort and longevity. Perfect for those looking for a lightweight, glossy finish that lasts 3-4 weeks.</p>
-            <h3>Select Finish</h3>
-            {% for finish, price in {'Plain': '+$0', 'French': '+$15', 'Ombre': '+$15', 'Chrome': '+$15'} %}
-                <label class="option {{ loop.first ? 'selected' : '' }}"><span><input {{ loop.first ? 'checked' : '' }} type="radio" name="finish"> {{ finish }}</span><strong>{{ price }}</strong></label>
-            {% endfor %}
-            <a class="btn wide" href="{{ path('/book') }}">Add to Appointment</a>
+            <h1>{{ service.name }}</h1>
+            <p class="meta"><span>{{ service.price }}</span> {{ service.duration }}</p>
+            <p>{{ service.description }}</p>
+            <p>Vivian will confirm the final design, shape, and finish with you before the service begins so the appointment fits your preferred style.</p>
+            <a class="btn wide" href="{{ path('/book?service=' ~ service.id) }}">Book This Service</a>
+
+            <section class="service-reviews">
+                <h2>Customer Reviews</h2>
+                {% for review in reviews %}
+                    <article class="service-review">
+                        <strong>{{ review.authorName }}</strong>
+                        <span>{{ review.rating }}/5</span>
+                        {% if review.comment %}<p>{{ review.comment }}</p>{% endif %}
+                    </article>
+                {% else %}
+                    <p class="muted">No reviews for this service yet.</p>
+                {% endfor %}
+            </section>
         </div>
-        <img src="{{ images.brush }}" alt="Gel-X nail extension">
+        <img src="{{ images.brush }}" alt="{{ service.name }}">
     </section>
 </main>
 {% endblock %}

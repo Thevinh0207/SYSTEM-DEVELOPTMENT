@@ -3,11 +3,13 @@
 {% block content %}
 <main class="booking">
     <h1>Book Your Appointment</h1>
-    <p class="subtitle">Do you have an account?</p>
+    <p class="subtitle">Step 1 of 6: Account</p>
+    <a class="booking-back" href="{{ path('/') }}">Back to Home</a>
     <div class="booking-grid">
         <section class="choice-list">
-            <a href="{{ path('/login') }}"><strong>Log In</strong><span>Sign in to your existing account</span></a>
-            <a href="{{ path('/register') }}"><strong>Create Account</strong><span>Sign up and save your preferences</span></a>
+            {% set authReturn = summary.serviceId is defined ? '/book/date' : '/book/service' %}
+            <a href="{{ path('/login?return=' ~ authReturn) }}"><strong>Log In</strong><span>Sign in to your existing account</span></a>
+            <a href="{{ path('/register?return=' ~ authReturn) }}"><strong>Create Account</strong><span>Sign up and save your preferences</span></a>
             <a class="active" href="{{ path('/book/info') }}"><strong>Continue as Guest</strong><span>Book without creating an account</span></a>
         </section>
         {% include 'partials/summary.twig' %}

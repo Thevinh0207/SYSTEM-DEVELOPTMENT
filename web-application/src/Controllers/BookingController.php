@@ -39,8 +39,19 @@ class BookingController extends BaseController
     // ── Step 1 — gate ────────────────────────────────────────────────────
     public function gate(Request $r, Response $response): Response
     {
+        if (($r->getQueryParams()['new'] ?? '') === '1') {
+            unset($_SESSION['booking'], $_SESSION['booking_form'], $_SESSION['booking_errors']);
+        }
+
+        $serviceId = (int) ($r->getQueryParams()['service'] ?? 0);
+        if ($serviceId > 0) {
+            $this->selectService($serviceId);
+        }
+
         if (!empty($_SESSION['user'])) {
-            return $this->redirect('/book/service');
+            return !empty($_SESSION['booking']['serviceId'])
+                ? $this->redirect('/book/date')
+                : $this->redirect('/book/service');
         }
         return $this->render($response, 'booking/account.twig', [
             'active'  => 'book',
@@ -101,7 +112,9 @@ class BookingController extends BaseController
 
         $_SESSION['booking']['contact'] = $form;
         unset($_SESSION['booking_form']['info']);
-        return $this->redirect('/book/service');
+        return !empty($_SESSION['booking']['serviceId'])
+            ? $this->redirect('/book/date')
+            : $this->redirect('/book/service');
     }
 
     // ── Step 3 — pick service ────────────────────────────────────────────
@@ -131,21 +144,10 @@ class BookingController extends BaseController
             return $this->redirect('/book/service');
         }
 
-        try {
-            $service = $this->services->getById($serviceId);
-        } catch (Throwable $e) {
-            $service = null;
-        }
-        if (!$service) {
+        if (!$this->selectService($serviceId)) {
             $_SESSION['booking_errors'] = ['service' => 'That service is no longer available.'];
             return $this->redirect('/book/service');
         }
-
-        $_SESSION['booking']['serviceId'] = (int) $service['ServiceID'];
-        $_SESSION['booking']['service']   = $service['name'];
-        $_SESSION['booking']['duration']  = $service['duration'] . ' min';
-        $_SESSION['booking']['price']     = '$' . number_format((float) $service['price'], 2);
-        $_SESSION['booking']['priceNum']  = (float) $service['price'];
 
         return $this->redirect('/book/date');
     }
@@ -366,5 +368,25 @@ class BookingController extends BaseController
             'priceNum' => (float) $s['price'],
             'image'    => 'brush',
         ], $services);
+    }
+
+    private function selectService(int $serviceId): bool
+    {
+        try {
+            $service = $this->services->getById($serviceId);
+        } catch (Throwable $e) {
+            $service = null;
+        }
+
+        if (!$service) {
+            return false;
+        }
+
+        $_SESSION['booking']['serviceId'] = (int) $service['ServiceID'];
+        $_SESSION['booking']['service']   = $service['name'];
+        $_SESSION['booking']['duration']  = $service['duration'] . ' min';
+        $_SESSION['booking']['price']     = '$' . number_format((float) $service['price'], 2);
+        $_SESSION['booking']['priceNum']  = (float) $service['price'];
+        return true;
     }
 }
