@@ -16,17 +16,17 @@ class ReviewModel
 {
     public function findAll(): array
     {
-        return R::findAll('reviews', 'ORDER BY reviewDate DESC');
+        return R::findAll('reviews', 'ORDER BY review_date DESC');
     }
 
     public function findByUserId(int $userId): array
     {
-        return R::find('reviews', 'userID = ? ORDER BY reviewDate DESC', [$userId]);
+        return R::find('reviews', 'user_id = ? ORDER BY review_date DESC', [$userId]);
     }
 
     public function findByAppointmentId(int $appointmentId): ?OODBBean
     {
-        return R::findOne('reviews', 'appointmentID = ?', [$appointmentId]);
+        return R::findOne('reviews', 'appointment_id = ?', [$appointmentId]);
     }
 
     public function load(int $id): ?OODBBean

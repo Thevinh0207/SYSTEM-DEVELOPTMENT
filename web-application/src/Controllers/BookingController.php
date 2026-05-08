@@ -199,6 +199,15 @@ class BookingController extends BaseController
             return $this->redirect('/book/date');
         }
 
+        // Slot availability check only — appointment is NOT saved yet.
+        // It will be created at the payment step so a half-finished checkout
+        // doesn't leave orphan rows in the database.
+        if (!$this->appointments->isAvailable($date, $time)) {
+            $_SESSION['booking_errors']['time'] = 'That time slot is no longer available. Please pick another time.';
+            $_SESSION['booking_form']['date']   = ['date' => $date, 'time' => $timeRaw];
+            return $this->redirect('/book/date');
+        }
+
         $userId  = $_SESSION['user']['id'] ?? null;
         $contact = $userId
             ? [
@@ -209,30 +218,6 @@ class BookingController extends BaseController
             ]
             : $booking['contact'];
 
-        try {
-            $appt = $this->appointments->create([
-                'serviceID'  => (int) $booking['serviceId'],
-                'userID'     => $userId,
-                'guestName'  => $userId ? null : trim($contact['firstName'] . ' ' . $contact['lastName']),
-                'guestEmail' => $userId ? null : $contact['email'],
-                'guestPhone' => $userId ? null : $contact['phoneNumber'],
-                'date'       => $date,
-                'time'       => $time,
-                'notes'      => null,
-                'status'     => 'pending',
-            ]);
-        } catch (Throwable $e) {
-            $_SESSION['booking_errors'] = ['general' => 'Could not save your appointment. Please try again.'];
-            return $this->redirect('/book/date');
-        }
-
-        if (!$appt) {
-            $_SESSION['booking_errors']['time'] = 'That time slot is no longer available. Please pick another time.';
-            $_SESSION['booking_form']['date']   = ['date' => $date, 'time' => $timeRaw];
-            return $this->redirect('/book/date');
-        }
-
-        $_SESSION['booking']['id']         = (int) $appt->id;
         $_SESSION['booking']['date']       = $date;
         $_SESSION['booking']['time']       = $timeRaw;
         $_SESSION['booking']['timeStored'] = $time;
@@ -241,10 +226,10 @@ class BookingController extends BaseController
         return $this->redirect('/book/payment');
     }
 
-    // ── Step 5 — deposit ─────────────────────────────────────────────────
+    // ── Step 5 — deposit (creates the appointment + payment together) ───
     public function showPayment(Request $r, Response $response): Response
     {
-        if (empty($_SESSION['booking']['id'])) {
+        if (empty($_SESSION['booking']['date']) || empty($_SESSION['booking']['time'])) {
             return $this->redirect('/book/date');
         }
         $errors = $_SESSION['booking_errors'] ?? [];
@@ -290,16 +275,37 @@ class BookingController extends BaseController
 
         $booking = $_SESSION['booking'] ?? null;
         $contact = $booking['contact'] ?? null;
-        if (!$booking || empty($booking['id']) || !$contact) {
+        if (!$booking || empty($booking['serviceId']) || empty($booking['date']) || empty($booking['time']) || !$contact) {
             $_SESSION['booking_errors'] = ['general' => 'Booking session expired. Please start again.'];
             return $this->redirect('/book');
         }
 
         $userId = $_SESSION['user']['id'] ?? null;
 
+        // Create appointment + payment as a single unit. If either step fails
+        // we roll back so the user can retry without orphan rows.
+        \RedBeanPHP\R::begin();
         try {
+            $appt = $this->appointments->create([
+                'serviceID'  => (int) $booking['serviceId'],
+                'userID'     => $userId,
+                'guestName'  => $userId ? null : trim($contact['firstName'] . ' ' . $contact['lastName']),
+                'guestEmail' => $userId ? null : $contact['email'],
+                'guestPhone' => $userId ? null : $contact['phoneNumber'],
+                'date'       => $booking['date'],
+                'time'       => $booking['timeStored'] ?? $booking['time'],
+                'notes'      => null,
+                'status'     => AppointmentModel::STATUS_CONFIRMED,
+            ]);
+
+            if (!$appt) {
+                \RedBeanPHP\R::rollback();
+                $_SESSION['booking_errors']['general'] = 'That time slot was just taken. Please pick another time.';
+                return $this->redirect('/book/date');
+            }
+
             $this->payments->create([
-                'appointmentID'    => (int) $booking['id'],
+                'appointmentID'    => (int) $appt->id,
                 'paymentFrom'      => $userId,
                 'paymentFromName'  => trim($contact['firstName'] . ' ' . $contact['lastName']),
                 'paymentFromEmail' => $contact['email'],
@@ -308,13 +314,13 @@ class BookingController extends BaseController
                 'paymentAmount'    => 20.00,
                 'paymentStatus'    => 'paid',
             ]);
-            $appt = $this->appointments->load((int) $booking['id']);
-            if ($appt) {
-                $appt->status = AppointmentModel::STATUS_CONFIRMED;
-                $this->appointments->save($appt);
-            }
+
+            \RedBeanPHP\R::commit();
+            $_SESSION['booking']['id'] = (int) $appt->id;
         } catch (Throwable $e) {
-            // Non-fatal — appointment is already saved.
+            \RedBeanPHP\R::rollback();
+            $_SESSION['booking_errors']['general'] = 'Could not complete the booking. Please try again.';
+            return $this->redirect('/book/payment');
         }
 
         return $this->redirect('/book/confirmed');

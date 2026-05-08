@@ -8,9 +8,12 @@ use App\Controllers\AuthController;
 use App\Controllers\BookingController;
 use App\Controllers\DashboardController;
 use App\Controllers\HomeController;
+use App\Models\AboutModel;
 use App\Models\AppointmentModel;
+use App\Models\FaqModel;
 use App\Models\PaymentModel;
 use App\Models\ReviewModel;
+use App\Models\ServiceCategoryModel;
 use App\Models\ServiceModel;
 use App\Models\UserModel;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -40,6 +43,8 @@ R::setup(
     $db['pass']
 );
 R::freeze(false);
+// Allow bean types with underscores (faq_category, service_category, about_section).
+\RedBeanPHP\Util\DispenseHelper::setEnforceNamingPolicy(false);
 
 // ─── Base path detection ────────────────────────────────────────────────
 $scriptDir = str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '')));
@@ -65,7 +70,7 @@ $twig->addFunction(new TwigFunction('asset', static fn(string $p): string =>
     $basePath . '/assets/' . ltrim($p, '/')));
 
 // ─── Controllers (manual DI) ────────────────────────────────────────────
-$home      = new HomeController($twig, $basePath, new ServiceModel());
+$home      = new HomeController($twig, $basePath, new ServiceModel(), new FaqModel(), new AboutModel());
 $auth      = new AuthController($twig, $basePath, new UserModel());
 $booking   = new BookingController(
     $twig, $basePath,
@@ -84,7 +89,10 @@ $admin     = new AdminPanelController(
     new AppointmentModel(),
     new ServiceModel(),
     new ReviewModel(),
-    new PaymentModel()
+    new PaymentModel(),
+    new FaqModel(),
+    new AboutModel(),
+    new ServiceCategoryModel()
 );
 
 // ─── Error handlers ─────────────────────────────────────────────────────
@@ -163,6 +171,22 @@ $app->get ('/admin/appointments/{id:[0-9]+}/edit',   [$admin, 'editAppointment']
 $app->post('/admin/appointments/{id:[0-9]+}/edit',   [$admin, 'updateAppointment']);
 $app->post('/admin/appointments/{id:[0-9]+}/cancel', [$admin, 'cancelAppointment']);
 $app->post('/admin/reviews/{id:[0-9]+}/reply',       [$admin, 'replyToReview']);
+$app->get ('/admin/faq/new',                         [$admin, 'newFaq']);
+$app->post('/admin/faq/new',                         [$admin, 'createFaq']);
+$app->get ('/admin/faq/{id:[0-9]+}/edit',            [$admin, 'editFaq']);
+$app->post('/admin/faq/{id:[0-9]+}/edit',            [$admin, 'updateFaq']);
+$app->post('/admin/faq/{id:[0-9]+}/delete',          [$admin, 'deleteFaq']);
+$app->get ('/admin/about/new',                       [$admin, 'newAbout']);
+$app->post('/admin/about/new',                       [$admin, 'createAbout']);
+$app->get ('/admin/about/{id:[0-9]+}/edit',          [$admin, 'editAbout']);
+$app->post('/admin/about/{id:[0-9]+}/edit',          [$admin, 'updateAbout']);
+$app->post('/admin/about/{id:[0-9]+}/delete',        [$admin, 'deleteAbout']);
+// Service category management
+$app->get ('/admin/service-categories/new',          [$admin, 'newServiceCategory']);
+$app->post('/admin/service-categories/new',          [$admin, 'createServiceCategory']);
+$app->get ('/admin/service-categories/{id:[0-9]+}/edit',[$admin, 'editServiceCategory']);
+$app->post('/admin/service-categories/{id:[0-9]+}/edit',[$admin, 'updateServiceCategory']);
+$app->post('/admin/service-categories/{id:[0-9]+}/delete',[$admin, 'deleteServiceCategory']);
 // Section route — keep last so specific routes above take precedence.
 $app->get ('/admin[/{section}]', [$admin, 'dashboard']);
 

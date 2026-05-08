@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Data\ViewData;
+use App\Models\AboutModel;
+use App\Models\FaqModel;
 use App\Models\ServiceModel;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -16,7 +18,9 @@ class HomeController extends BaseController
     public function __construct(
         Environment $twig,
         string $basePath,
-        private ?ServiceModel $services = null
+        private ?ServiceModel $services = null,
+        private ?FaqModel $faqs         = null,
+        private ?AboutModel $about      = null
     ) {
         parent::__construct($twig, $basePath);
     }
@@ -32,20 +36,18 @@ class HomeController extends BaseController
     public function services(Request $r, Response $response): Response
     {
         try {
-            $beans = $this->services ? $this->services->findAll() : [];
+            $rows = $this->services ? $this->services->findAllWithCategory() : [];
         } catch (Throwable $e) {
-            $beans = [];
+            $rows = [];
         }
-
-        // Group by category for the menu sections.
         $grouped = [];
-        foreach ($beans as $s) {
-            $grouped[$s->category][] = [
-                'id'          => (int) $s->id,
-                'name'        => $s->name,
-                'description' => $s->description,
-                'duration'    => $s->duration . ' min',
-                'price'       => '$' . number_format((float) $s->price, 2),
+        foreach ($rows as $s) {
+            $grouped[$s['category']][] = [
+                'id'          => (int) $s['id'],
+                'name'        => $s['name'],
+                'description' => $s['description'],
+                'duration'    => $s['duration'] . ' min',
+                'price'       => '$' . number_format((float) $s['price'], 2),
             ];
         }
         ksort($grouped);
@@ -63,11 +65,39 @@ class HomeController extends BaseController
 
     public function about(Request $r, Response $response): Response
     {
-        return $this->render($response, 'about.twig', ['active' => 'about']);
+        try {
+            $beans = $this->about ? $this->about->findAll() : [];
+        } catch (Throwable $e) {
+            $beans = [];
+        }
+        $sections = [];
+        foreach ($beans as $b) {
+            $sections[] = ['heading' => $b->heading, 'body' => $b->body];
+        }
+        return $this->render($response, 'about.twig', [
+            'active'   => 'about',
+            'sections' => $sections,
+        ]);
     }
 
     public function faq(Request $r, Response $response): Response
     {
-        return $this->render($response, 'faq.twig', ['active' => 'faq']);
+        try {
+            $grouped = $this->faqs ? $this->faqs->findGroupedByCategory() : [];
+        } catch (Throwable $e) {
+            $grouped = [];
+        }
+        $byCategory = [];
+        foreach ($grouped as $category => $beans) {
+            $rows = [];
+            foreach ($beans as $b) {
+                $rows[] = ['question' => $b->question, 'answer' => $b->answer];
+            }
+            $byCategory[$category] = $rows;
+        }
+        return $this->render($response, 'faq.twig', [
+            'active'    => 'faq',
+            'faqGroups' => $byCategory,
+        ]);
     }
 }

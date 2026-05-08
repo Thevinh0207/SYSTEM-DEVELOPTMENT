@@ -8,14 +8,15 @@
     </section>
     <section class="faq-grid">
         <div>
-            <h2>Deposit &amp; Cancellation</h2>
-            <h3>Deposit Required</h3><p>A non-refundable $20 deposit is required to secure your appointment. This deposit will be applied to your service total.</p>
-            <h3>Cancellation Policy</h3><p>We require at least 48 hours notice for cancellations or rescheduling. Cancellations made within 48 hours will result in forfeiture of your deposit.</p>
-            <h3>No-Show Policy</h3><p>If you miss your appointment without notice, your deposit will be lost and a new deposit will be required for future bookings.</p>
-            <h3>Late Arrivals</h3><p>We have a 15-minute grace period. If you arrive more than 15 minutes late, your appointment may need to be rescheduled.</p>
-            <h2>Services</h2>
-            <h3>Do I need to remove my old set?</h3><p>Yes, proper removal is required before getting a new set. We offer removal services for $20 if done with a new set, or as a standalone service.</p>
-            <h3>Can I bring my own polish?</h3><p>We use professional-grade gel polish for all services. For hygiene reasons, we cannot use customer-provided products.</p>
+            {% for category, items in faqGroups %}
+                <h2>{{ category }}</h2>
+                {% for item in items %}
+                    <h3>{{ item.question }}</h3>
+                    <p>{{ item.answer }}</p>
+                {% endfor %}
+            {% else %}
+                <p class="muted">No FAQ entries yet — check back soon.</p>
+            {% endfor %}
         </div>
         <img src="{{ images.shelf }}" alt="Nail polish shelf">
     </section>

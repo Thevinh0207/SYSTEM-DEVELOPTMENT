@@ -1,0 +1,39 @@
+{% extends 'layout.twig' %}
+{% block title %}{{ mode == 'edit' ? 'Edit About Section' : 'New About Section' }} | Admin{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+{% block nav %}{% endblock %}
+{% block content %}
+<main class="admin-form-page">
+    <a class="back-link" href="{{ path('/admin/about') }}">← Back to About sections</a>
+    <h1>{{ mode == 'edit' ? 'Edit Story Block' : 'New Story Block' }}</h1>
+
+    <form method="post"
+          action="{{ mode == 'edit' ? path('/admin/about/' ~ id ~ '/edit') : path('/admin/about/new') }}"
+          class="admin-form"
+          {% if mode == 'edit' %}data-confirm="Save changes to this section?" data-confirm-title="Confirm changes"{% endif %}>
+
+        <label>
+            Heading
+            <input type="text" name="heading" value="{{ section.heading|default('') }}" required>
+            {% if errors.heading is defined %}<span class="error">{{ errors.heading }}</span>{% endif %}
+        </label>
+
+        <label>
+            Body
+            <textarea name="body" rows="8" required>{{ section.body|default('') }}</textarea>
+            {% if errors.body is defined %}<span class="error">{{ errors.body }}</span>{% endif %}
+        </label>
+
+        <label>
+            Sort order (lower = shown first)
+            <input type="number" name="sortOrder" value="{{ section.sortOrder|default(0) }}">
+        </label>
+
+        <div class="form-actions">
+            <a class="btn outline" href="{{ path('/admin/about') }}">Cancel</a>
+            <button type="submit" class="btn">{{ mode == 'edit' ? 'Save changes' : 'Add section' }}</button>
+        </div>
+    </form>
+</main>
+{% include 'partials/confirm-modal.twig' %}
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends 'layout.twig' %}
+{% block title %}{{ mode == 'edit' ? 'Edit FAQ' : 'New FAQ' }} | Admin{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+{% block nav %}{% endblock %}
+{% block content %}
+<main class="admin-form-page">
+    <a class="back-link" href="{{ path('/admin/faq') }}">← Back to FAQ</a>
+    <h1>{{ mode == 'edit' ? 'Edit FAQ Entry' : 'New FAQ Entry' }}</h1>
+
+    <form method="post"
+          action="{{ mode == 'edit' ? path('/admin/faq/' ~ id ~ '/edit') : path('/admin/faq/new') }}"
+          class="admin-form"
+          {% if mode == 'edit' %}data-confirm="Save changes to this FAQ entry?" data-confirm-title="Confirm changes"{% endif %}>
+
+        <label>
+            Category
+            <input type="text" name="category" value="{{ faq.category|default('General') }}" required>
+            {% if errors.category is defined %}<span class="error">{{ errors.category }}</span>{% endif %}
+            <span class="hint">Used for grouping on the public FAQ page (e.g. "Deposit & Cancellation").</span>
+        </label>
+
+        <label>
+            Question
+            <input type="text" name="question" value="{{ faq.question|default('') }}" required>
+            {% if errors.question is defined %}<span class="error">{{ errors.question }}</span>{% endif %}
+        </label>
+
+        <label>
+            Answer
+            <textarea name="answer" rows="5" required>{{ faq.answer|default('') }}</textarea>
+            {% if errors.answer is defined %}<span class="error">{{ errors.answer }}</span>{% endif %}
+        </label>
+
+        <label>
+            Sort order (lower = shown first)
+            <input type="number" name="sortOrder" value="{{ faq.sortOrder|default(0) }}">
+        </label>
+
+        <div class="form-actions">
+            <a class="btn outline" href="{{ path('/admin/faq') }}">Cancel</a>
+            <button type="submit" class="btn">{{ mode == 'edit' ? 'Save changes' : 'Add FAQ' }}</button>
+        </div>
+    </form>
+</main>
+{% include 'partials/confirm-modal.twig' %}
+{% endblock %}

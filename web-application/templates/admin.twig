@@ -14,6 +14,9 @@
         <a class="{{ section == 'services'     ? 'active' : '' }}" href="{{ path('/admin/services') }}">Services</a>
         <a class="{{ section == 'payments'     ? 'active' : '' }}" href="{{ path('/admin/payments') }}">Payments</a>
         <a class="{{ section == 'reviews'      ? 'active' : '' }}" href="{{ path('/admin/reviews') }}">Reviews</a>
+        <a class="{{ section == 'service-categories' ? 'active' : '' }}" href="{{ path('/admin/service-categories') }}">Service Categories</a>
+        <a class="{{ section == 'faq'                ? 'active' : '' }}" href="{{ path('/admin/faq') }}">FAQ</a>
+        <a class="{{ section == 'about'              ? 'active' : '' }}" href="{{ path('/admin/about') }}">About</a>
         <form method="post" action="{{ path('/logout') }}" class="admin-logout">
             <button type="submit" class="btn outline">Log out</button>
         </form>
@@ -174,6 +177,123 @@
             {% else %}
                 <p class="muted">No reviews yet.</p>
             {% endfor %}
+
+        {# ── SERVICE CATEGORIES ───────────────────────────────────── #}
+        {% elseif section == 'service-categories' %}
+            <div class="admin-section-head">
+                <div>
+                    <h1>Service Categories</h1>
+                    <p class="section-subtitle">{{ serviceCategories|default([])|length }} total</p>
+                </div>
+                <a href="{{ path('/admin/service-categories/new') }}" class="btn">+ Add</a>
+            </div>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead><tr><th>Order</th><th>Name</th><th>Actions</th></tr></thead>
+                    <tbody>
+                    {% for c in serviceCategories|default([]) %}
+                        <tr>
+                            <td>{{ c.sortOrder }}</td>
+                            <td><strong>{{ c.name }}</strong></td>
+                            <td class="action-cell">
+                                <a class="btn-sm" href="{{ path('/admin/service-categories/' ~ c.id ~ '/edit') }}">Edit</a>
+                                <form method="post"
+                                      action="{{ path('/admin/service-categories/' ~ c.id ~ '/delete') }}"
+                                      data-confirm="Delete the “{{ c.name }}” category? This will fail if any services still use it."
+                                      data-confirm-title="Delete category"
+                                      data-confirm-danger
+                                      style="display:inline;">
+                                    <button type="submit" class="btn-sm btn-sm-danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="3" class="muted">No categories yet.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        {# ── FAQ ──────────────────────────────────────────────────── #}
+        {% elseif section == 'faq' %}
+            <div class="admin-section-head">
+                <div>
+                    <h1>FAQ Entries</h1>
+                    <p class="section-subtitle">{{ faqs|default([])|length }} total</p>
+                </div>
+                <a href="{{ path('/admin/faq/new') }}" class="btn">+ Add</a>
+            </div>
+
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr><th>Order</th><th>Category</th><th>Question</th><th>Answer (preview)</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for faq in faqs|default([]) %}
+                        <tr>
+                            <td>{{ faq.sortOrder }}</td>
+                            <td>{{ faq.category }}</td>
+                            <td><strong>{{ faq.question }}</strong></td>
+                            <td><span class="muted">{{ faq.answer|slice(0, 90) }}{{ faq.answer|length > 90 ? '…' : '' }}</span></td>
+                            <td class="action-cell">
+                                <a class="btn-sm" href="{{ path('/admin/faq/' ~ faq.id ~ '/edit') }}">Edit</a>
+                                <form method="post"
+                                      action="{{ path('/admin/faq/' ~ faq.id ~ '/delete') }}"
+                                      data-confirm="Delete this FAQ entry? This cannot be undone."
+                                      data-confirm-title="Delete FAQ"
+                                      data-confirm-danger
+                                      style="display:inline;">
+                                    <button type="submit" class="btn-sm btn-sm-danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5" class="muted">No FAQ entries yet.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        {# ── ABOUT ────────────────────────────────────────────────── #}
+        {% elseif section == 'about' %}
+            <div class="admin-section-head">
+                <div>
+                    <h1>About Page Sections</h1>
+                    <p class="section-subtitle">{{ aboutSections|default([])|length }} story blocks</p>
+                </div>
+                <a href="{{ path('/admin/about/new') }}" class="btn">+ Add</a>
+            </div>
+
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr><th>Order</th><th>Heading</th><th>Body (preview)</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for sec in aboutSections|default([]) %}
+                        <tr>
+                            <td>{{ sec.sortOrder }}</td>
+                            <td><strong>{{ sec.heading }}</strong></td>
+                            <td><span class="muted">{{ sec.body|slice(0, 100) }}{{ sec.body|length > 100 ? '…' : '' }}</span></td>
+                            <td class="action-cell">
+                                <a class="btn-sm" href="{{ path('/admin/about/' ~ sec.id ~ '/edit') }}">Edit</a>
+                                <form method="post"
+                                      action="{{ path('/admin/about/' ~ sec.id ~ '/delete') }}"
+                                      data-confirm="Delete this About section?"
+                                      data-confirm-title="Delete section"
+                                      data-confirm-danger
+                                      style="display:inline;">
+                                    <button type="submit" class="btn-sm btn-sm-danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="4" class="muted">No About sections yet.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
         {# ── APPOINTMENTS ──────────────────────────────────────────── #}
         {% else %}

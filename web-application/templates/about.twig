@@ -17,60 +17,16 @@
     </section>
 
     <section class="about-story">
-        <div class="story-block">
-            <h2>How it started</h2>
-            <p>
-                I painted my first French tip when I was thirteen, sitting at the kitchen
-                table with a cheap polish kit my mom picked up at the pharmacy. The next
-                morning my best friend asked who did my nails — and that was it. I spent
-                the rest of high school running a tiny salon out of my bedroom, charging
-                my classmates ten bucks a manicure and watching every nail-art tutorial
-                I could find online.
+        {% for section in sections|default([]) %}
+            <div class="story-block">
+                <h2>{{ section.heading }}</h2>
+                <p>{{ section.body|nl2br }}</p>
+            </div>
+        {% else %}
+            <p class="muted" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+                No content yet — check back soon.
             </p>
-        </div>
-
-        <div class="story-block">
-            <h2>Getting certified</h2>
-            <p>
-                Right out of high school I enrolled in a DEP in Esthétique — a year and
-                a half of practical training, sanitation theory, anatomy, and more
-                manicure drills than I can count. Earning that certificate was the
-                moment it stopped feeling like a hobby and started feeling like a
-                career.
-            </p>
-        </div>
-
-        <div class="story-block">
-            <h2>The leap</h2>
-            <p>
-                After my DEP I gave myself a deadline: one year of working at a chain
-                salon to learn the business side, then strike out on my own. Studio Doki
-                opened in spring 2025 above a coffee shop in Plateau, with a single
-                chair, a second-hand UV lamp, and a wall I painted blush pink at 2 a.m.
-                the night before my first client.
-            </p>
-        </div>
-
-        <div class="story-block">
-            <h2>What I love</h2>
-            <p>
-                Chrome finishes that look like liquid metal. Almond shapes. The exact
-                moment a client sees the final result and tilts her hand toward the
-                window. Skincare hauls, lip oil collections, building playlists for each
-                appointment, and the slow magic of an hour where someone gets to sit
-                still and be cared for.
-            </p>
-        </div>
-
-        <div class="story-block">
-            <h2>The studio</h2>
-            <p>
-                Studio Doki is small on purpose — one client at a time, no rushing, no
-                overlapping appointments. I source gels and acrylics from brands that
-                actually disclose their ingredients, sterilize tools after every visit,
-                and keep the playlist on shuffle. Bring a coffee. Stay a while.
-            </p>
-        </div>
+        {% endfor %}
     </section>
 
     <section class="about-cta">

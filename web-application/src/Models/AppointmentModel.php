@@ -26,7 +26,7 @@ class AppointmentModel
 
     public function findByUserId(int $userId): array
     {
-        return R::find('appointment', 'userID = ? ORDER BY date DESC, time DESC', [$userId]);
+        return R::find('appointment', 'user_id = ? ORDER BY date DESC, time DESC', [$userId]);
     }
 
     public function load(int $id): ?OODBBean
@@ -41,22 +41,36 @@ class AppointmentModel
             return null;
         }
 
-        $userId     = $data['userID'] ?? null;
-        $userId     = ($userId === null || $userId === '') ? null : (int) $userId;
-        $guestName  = $userId === null ? trim((string) ($data['guestName']  ?? '')) : null;
-        $guestEmail = $userId === null ? trim((string) ($data['guestEmail'] ?? '')) : null;
-        $guestPhone = $userId === null ? trim((string) ($data['guestPhone'] ?? '')) : null;
+        $userId = $data['userID'] ?? null;
+        $userId = ($userId === null || $userId === '') ? null : (int) $userId;
 
-        if ($userId === null && ($guestName === '' || ($guestEmail === '' && $guestPhone === ''))) {
+        // Always snapshot contact info on the appointment row — for guests
+        // we take it from the form, for logged-in users we look it up on the
+        // user table. This keeps every appointment self-describing.
+        $name  = trim((string) ($data['guestName']  ?? ''));
+        $email = trim((string) ($data['guestEmail'] ?? ''));
+        $phone = trim((string) ($data['guestPhone'] ?? ''));
+
+        if ($userId !== null && ($name === '' || $email === '' || $phone === '')) {
+            $u = R::load('user', $userId);
+            if ($u->id) {
+                $name  = $name  !== '' ? $name  : trim($u->firstName . ' ' . $u->lastName);
+                $email = $email !== '' ? $email : (string) $u->email;
+                $phone = $phone !== '' ? $phone : (string) $u->phoneNumber;
+            }
+        }
+
+        // Guests must supply at least name + (email or phone).
+        if ($userId === null && ($name === '' || ($email === '' && $phone === ''))) {
             return null;
         }
 
         $appt             = R::dispense('appointment');
         $appt->serviceID  = (int) $data['serviceID'];
         $appt->userID     = $userId;
-        $appt->guestName  = ($guestName  !== null && $guestName  !== '') ? $guestName  : null;
-        $appt->guestEmail = ($guestEmail !== null && $guestEmail !== '') ? $guestEmail : null;
-        $appt->guestPhone = ($guestPhone !== null && $guestPhone !== '') ? $guestPhone : null;
+        $appt->guestName  = $name  !== '' ? $name  : null;
+        $appt->guestEmail = $email !== '' ? $email : null;
+        $appt->guestPhone = $phone !== '' ? $phone : null;
         $appt->date       = $data['date'];
         $appt->time       = $data['time'];
         $appt->notes      = $data['notes'] ?? null;

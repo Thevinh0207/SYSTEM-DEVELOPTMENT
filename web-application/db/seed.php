@@ -16,6 +16,7 @@ R::setup(
     $db['pass']
 );
 R::freeze(false);
+\RedBeanPHP\Util\DispenseHelper::setEnforceNamingPolicy(false);
 $pdo = R::getDatabaseAdapter()->getDatabase()->getPDO();
 $adminEmails = array_map('strtolower', Config::get('admin_emails', []));
 
@@ -57,11 +58,29 @@ try {
         ]);
     }
 
-    // 3. SERVICES
+    // 3. SERVICE CATEGORIES + SERVICES
+    echo "→ Seeding service categories...\n";
+    $svcCatStmt = $pdo->prepare(
+        'INSERT INTO service_category (name, sort_order) VALUES (:name, :sort_order)'
+    );
+    $serviceCategories = [
+        ['Extensions', 10],
+        ['Nail Care',  20],
+        ['Nail Art',   30],
+    ];
+    foreach ($serviceCategories as [$n, $s]) {
+        $svcCatStmt->execute([':name' => $n, ':sort_order' => $s]);
+    }
+    // Map category names → ids for the inserts below.
+    $svcCatId = [];
+    foreach ($pdo->query('SELECT id, name FROM service_category') as $row) {
+        $svcCatId[$row['name']] = (int) $row['id'];
+    }
+
     echo "→ Seeding services...\n";
     $serviceStmt = $pdo->prepare(
-        'INSERT INTO services (name, category, description, price, duration)
-         VALUES (:name, :category, :description, :price, :duration)'
+        'INSERT INTO services (name, category_id, description, price, duration)
+         VALUES (:name, :category_id, :description, :price, :duration)'
     );
 
     $services = [
@@ -84,19 +103,27 @@ try {
     foreach ($services as [$name, $cat, $desc, $price, $duration]) {
         $serviceStmt->execute([
             ':name'        => $name,
-            ':category'    => $cat,
+            ':category_id' => $svcCatId[$cat],
             ':description' => $desc,
             ':price'       => $price,
             ':duration'    => $duration,
         ]);
     }
 
-    // 4. APPOINTMENTS
+    // 4. APPOINTMENTS — snapshot the contact info on every row.
     echo "→ Seeding appointments...\n";
     $apptStmt = $pdo->prepare(
-        'INSERT INTO appointment (service_id, user_id, date, time, notes, status)
-         VALUES (:service_id, :user_id, :date, :time, :notes, :status)'
+        'INSERT INTO appointment
+            (service_id, user_id, guest_name, guest_email, guest_phone, date, time, notes, status)
+         VALUES
+            (:service_id, :user_id, :guest_name, :guest_email, :guest_phone, :date, :time, :notes, :status)'
     );
+
+    // Map seeded users by id so we can snapshot their name/email/phone.
+    $userById = [];
+    foreach ($pdo->query('SELECT id, first_name, last_name, email, phone_number FROM user') as $u) {
+        $userById[(int) $u['id']] = $u;
+    }
 
     $appointments = [
         // [serviceID, userID, date, time, notes, status]
@@ -110,13 +137,17 @@ try {
     ];
 
     foreach ($appointments as [$serviceID, $userID, $date, $time, $notes, $status]) {
+        $u = $userById[$userID] ?? null;
         $apptStmt->execute([
-            ':service_id' => $serviceID,
-            ':user_id'    => $userID,
-            ':date'       => $date,
-            ':time'       => $time,
-            ':notes'      => $notes,
-            ':status'     => $status,
+            ':service_id'  => $serviceID,
+            ':user_id'     => $userID,
+            ':guest_name'  => $u ? trim($u['first_name'] . ' ' . $u['last_name']) : 'Guest',
+            ':guest_email' => $u ? $u['email']         : null,
+            ':guest_phone' => $u ? $u['phone_number']  : null,
+            ':date'        => $date,
+            ':time'        => $time,
+            ':notes'       => $notes,
+            ':status'      => $status,
         ]);
     }
 
@@ -176,6 +207,60 @@ try {
             ':payment_type'       => $type,
             ':payment_amount'     => $amount,
             ':payment_status'     => $status,
+        ]);
+    }
+
+    // 7. FAQ
+    echo "→ Seeding FAQ...\n";
+    $faqStmt = $pdo->prepare(
+        'INSERT INTO faq (category, question, answer, sort_order)
+         VALUES (:category, :question, :answer, :sort_order)'
+    );
+    $faqs = [
+        ['Deposit & Cancellation', 'Deposit Required',     'A non-refundable $20 deposit is required to secure your appointment. This deposit will be applied to your service total.', 10],
+        ['Deposit & Cancellation', 'Cancellation Policy',  'We require at least 48 hours notice for cancellations or rescheduling. Cancellations made within 48 hours will result in forfeiture of your deposit.',                          20],
+        ['Deposit & Cancellation', 'No-Show Policy',       'If you miss your appointment without notice, your deposit will be lost and a new deposit will be required for future bookings.',                                              30],
+        ['Deposit & Cancellation', 'Late Arrivals',        'We have a 15-minute grace period. If you arrive more than 15 minutes late, your appointment may need to be rescheduled.',                                                       40],
+        ['Services',               'Do I need to remove my old set?', 'Yes, proper removal is required before getting a new set. We offer removal services for $20 if done with a new set, or as a standalone service.',                    50],
+        ['Services',               'Can I bring my own polish?',      'We use professional-grade gel polish for all services. For hygiene reasons, we cannot use customer-provided products.',                                              60],
+    ];
+    foreach ($faqs as [$cat, $q, $a, $sort]) {
+        $faqStmt->execute([
+            ':category'   => $cat,
+            ':question'   => $q,
+            ':answer'     => $a,
+            ':sort_order' => $sort,
+        ]);
+    }
+
+    // 8. ABOUT SECTIONS
+    echo "→ Seeding About sections...\n";
+    $aboutStmt = $pdo->prepare(
+        'INSERT INTO about_section (heading, body, sort_order)
+         VALUES (:heading, :body, :sort_order)'
+    );
+    $about = [
+        ['How it started',
+         "I painted my first French tip when I was thirteen, sitting at the kitchen table with a cheap polish kit my mom picked up at the pharmacy. The next morning my best friend asked who did my nails — and that was it. I spent the rest of high school running a tiny salon out of my bedroom, charging my classmates ten bucks a manicure and watching every nail-art tutorial I could find online.",
+         10],
+        ['Getting certified',
+         "Right out of high school I enrolled in a DEP in Esthétique — a year and a half of practical training, sanitation theory, anatomy, and more manicure drills than I can count. Earning that certificate was the moment it stopped feeling like a hobby and started feeling like a career.",
+         20],
+        ['The leap',
+         "After my DEP I gave myself a deadline: one year of working at a chain salon to learn the business side, then strike out on my own. Studio Doki opened in spring 2025 above a coffee shop in Plateau, with a single chair, a second-hand UV lamp, and a wall I painted blush pink at 2 a.m. the night before my first client.",
+         30],
+        ['What I love',
+         "Chrome finishes that look like liquid metal. Almond shapes. The exact moment a client sees the final result and tilts her hand toward the window. Skincare hauls, lip oil collections, building playlists for each appointment, and the slow magic of an hour where someone gets to sit still and be cared for.",
+         40],
+        ['The studio',
+         "Studio Doki is small on purpose — one client at a time, no rushing, no overlapping appointments. I source gels and acrylics from brands that actually disclose their ingredients, sterilize tools after every visit, and keep the playlist on shuffle. Bring a coffee. Stay a while.",
+         50],
+    ];
+    foreach ($about as [$h, $b, $sort]) {
+        $aboutStmt->execute([
+            ':heading'    => $h,
+            ':body'       => $b,
+            ':sort_order' => $sort,
         ]);
     }
 

@@ -10,6 +10,9 @@ DROP TABLE IF EXISTS reviews;
 DROP TABLE IF EXISTS appointment;
 DROP TABLE IF EXISTS services;
 DROP TABLE IF EXISTS user;
+DROP TABLE IF EXISTS faq;
+DROP TABLE IF EXISTS about_section;
+DROP TABLE IF EXISTS service_category;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -28,16 +31,27 @@ CREATE TABLE user (
     INDEX idx_user_role (role)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ─── SERVICE CATEGORIES ─────────────────────────────────────────────────
+-- Admin manages this list via /admin/service-categories.
+CREATE TABLE service_category (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(50) NOT NULL UNIQUE,
+    sort_order  INT         NOT NULL DEFAULT 0,
+    created_at  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ─── SERVICES ────────────────────────────────────────────────────────────
 CREATE TABLE services (
     id           INT AUTO_INCREMENT PRIMARY KEY,
     name         VARCHAR(50)    NOT NULL,
-    category     VARCHAR(50)    NOT NULL,
+    category_id  INT            NOT NULL,
     description  VARCHAR(255)   NOT NULL,
     price        DECIMAL(10, 2) NOT NULL,
     duration     INT            NOT NULL,
     created_at   DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_services_category (category)
+    CONSTRAINT fk_service_category FOREIGN KEY (category_id) REFERENCES service_category (id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    INDEX idx_services_category (category_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ─── APPOINTMENT ─────────────────────────────────────────────────────────
@@ -45,20 +59,22 @@ CREATE TABLE appointment (
     id            INT AUTO_INCREMENT PRIMARY KEY,
     service_id    INT          NOT NULL,
     user_id       INT          NULL,
-    guest_name    VARCHAR(101) NULL,
+    guest_name    VARCHAR(101) NOT NULL,
     guest_email   VARCHAR(100) NULL,
     guest_phone   VARCHAR(50)  NULL,
     date          DATE         NOT NULL,
     time          TIME         NOT NULL,
     notes         VARCHAR(255) NULL,
     status        VARCHAR(20)  NOT NULL DEFAULT 'pending',
-    active_slot   TINYINT      AS (CASE WHEN status <> 'cancelled' THEN 1 ELSE NULL END) STORED,
     created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_appointment_service FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE RESTRICT  ON UPDATE CASCADE,
     CONSTRAINT fk_appointment_user    FOREIGN KEY (user_id)    REFERENCES user (id)     ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT chk_appointment_status CHECK (status IN ('pending', 'confirmed', 'completed', 'cancelled')),
-    UNIQUE KEY uq_active_appointment_slot (date, time, active_slot),
+    -- Note: a generated `active_slot` column + UNIQUE (date, time, active_slot)
+    -- used to prevent double-bookings at the DB level, but RedBean's UPDATE
+    -- writes every bean column, which conflicts with generated columns.
+    -- The PHP-level isAvailable() check in AppointmentModel handles this now.
     INDEX idx_appointment_user (user_id),
     INDEX idx_appointment_service (service_id),
     INDEX idx_appointment_date (date),
@@ -100,4 +116,31 @@ CREATE TABLE payments (
     CONSTRAINT fk_payment_from        FOREIGN KEY (payment_from)   REFERENCES user (id)        ON DELETE SET NULL ON UPDATE CASCADE,
     INDEX idx_payment_status (payment_status),
     INDEX idx_payment_from (payment_from)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ─── FAQ ─────────────────────────────────────────────────────────────────
+-- Editable FAQ entries. Admin can CRUD via /admin/faq.
+-- `category` is a free-text grouping label (e.g. "Deposit & Cancellation").
+CREATE TABLE faq (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    category    VARCHAR(50)  NOT NULL DEFAULT 'General',
+    question    VARCHAR(255) NOT NULL,
+    answer      TEXT         NOT NULL,
+    sort_order  INT          NOT NULL DEFAULT 0,
+    created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_faq_sort (sort_order),
+    INDEX idx_faq_category (category)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ─── ABOUT SECTIONS ──────────────────────────────────────────────────────
+-- Editable About-page story blocks. Admin can CRUD via /admin/about.
+CREATE TABLE about_section (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    heading     VARCHAR(100) NOT NULL,
+    body        TEXT         NOT NULL,
+    sort_order  INT          NOT NULL DEFAULT 0,
+    created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_about_sort (sort_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

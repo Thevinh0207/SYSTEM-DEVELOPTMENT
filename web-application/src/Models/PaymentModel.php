@@ -30,12 +30,12 @@ class PaymentModel
 
     public function findByUserId(int $userId): array
     {
-        return R::find('payments', 'paymentFrom = ? ORDER BY created_at DESC', [$userId]);
+        return R::find('payments', 'payment_from = ? ORDER BY created_at DESC', [$userId]);
     }
 
     public function findByAppointmentId(int $appointmentId): ?OODBBean
     {
-        return R::findOne('payments', 'appointmentID = ?', [$appointmentId]);
+        return R::findOne('payments', 'appointment_id = ?', [$appointmentId]);
     }
 
     public function load(int $id): ?OODBBean

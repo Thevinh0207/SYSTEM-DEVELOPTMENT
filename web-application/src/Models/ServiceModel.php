@@ -8,15 +8,14 @@ use RedBeanPHP\OODBBean;
 use RedBeanPHP\R;
 
 /**
- * ServiceModel
- *
- * Data access for the `services` table — managed by RedBeanPHP.
+ * ServiceModel — managed by RedBeanPHP.
+ * Each row references a service_category row via category_id (FK).
  */
 class ServiceModel
 {
     public function findAll(): array
     {
-        return R::findAll('services', 'ORDER BY category ASC, name ASC');
+        return R::findAll('services', 'ORDER BY name ASC');
     }
 
     public function load(int $id): ?OODBBean
@@ -29,7 +28,7 @@ class ServiceModel
     {
         $service              = R::dispense('services');
         $service->name        = $data['name'];
-        $service->category    = $data['category'];
+        $service->categoryId  = (int) $data['categoryId'];
         $service->description = $data['description'] ?? '';
         $service->price       = (float) $data['price'];
         $service->duration    = (int) $data['duration'];
@@ -45,5 +44,31 @@ class ServiceModel
     public function delete(OODBBean $service): void
     {
         R::trash($service);
+    }
+
+    /**
+     * Returns services with category name attached, ready for templates.
+     * Each row: ['id', 'name', 'category', 'description', 'price', 'duration']
+     */
+    public function findAllWithCategory(): array
+    {
+        $catNames = [];
+        foreach (R::findAll('service_category', 'ORDER BY sort_order ASC') as $c) {
+            $catNames[(int) $c->id] = $c->name;
+        }
+
+        $rows = [];
+        foreach ($this->findAll() as $s) {
+            $rows[] = [
+                'id'          => (int) $s->id,
+                'name'        => $s->name,
+                'categoryId'  => (int) $s->categoryId,
+                'category'    => $catNames[(int) $s->categoryId] ?? '—',
+                'description' => $s->description,
+                'price'       => $s->price,
+                'duration'    => $s->duration,
+            ];
+        }
+        return $rows;
     }
 }

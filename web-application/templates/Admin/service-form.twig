@@ -20,8 +20,14 @@
 
         <label>
             Category
-            <input type="text" name="category" value="{{ service.category|default('') }}" required>
-            {% if errors.category is defined %}<span class="error">{{ errors.category }}</span>{% endif %}
+            <select name="categoryId" required>
+                <option value="">— Select a category —</option>
+                {% for c in categories %}
+                    <option value="{{ c.id }}" {{ service.categoryId|default(0) == c.id ? 'selected' : '' }}>{{ c.name }}</option>
+                {% endfor %}
+            </select>
+            {% if errors.categoryId is defined %}<span class="error">{{ errors.categoryId }}</span>{% endif %}
+            <span class="hint"><a href="{{ path('/admin/service-categories') }}">Manage categories →</a></span>
         </label>
 
         <label>
