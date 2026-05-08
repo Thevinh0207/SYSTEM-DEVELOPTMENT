@@ -87,17 +87,11 @@ class HomeController extends BaseController
         } catch (Throwable $e) {
             $grouped = [];
         }
-        $byCategory = [];
-        foreach ($grouped as $category => $beans) {
-            $rows = [];
-            foreach ($beans as $b) {
-                $rows[] = ['question' => $b->question, 'answer' => $b->answer];
-            }
-            $byCategory[$category] = $rows;
-        }
+        // The model already returns rows as ['question' => ..., 'answer' => ...]
+        // arrays grouped by category, so we pass them straight through.
         return $this->render($response, 'faq.twig', [
             'active'    => 'faq',
-            'faqGroups' => $byCategory,
+            'faqGroups' => $grouped,
         ]);
     }
 }
